@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CHEDASSIST</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+        /* General Body Styling */
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #1a1a1a; /* Dark background */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        /* Main Card Container */
+        .card {
+            background-color: #f0f0f0; /* Light gray background for the card */
+            border-radius: 16px;
+            padding: 40px 60px;
+            width: 100%;
+            max-width: 960px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Header Section */
+        .header {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 60px;
+        }
+
+        .logo {
+            height: 50px;
+            width: 50px;
+            color: #333;
+            margin-right: 15px;
+        }
+
+        .brand-name {
+            font-size: 2.5rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            color: #333;
+        }
+        
+        /* Features Grid */
+        .features {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 40px;
+            margin-bottom: 60px;
+        }
+
+        .feature-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .illustration-container {
+            height: 150px;
+            width: 100%;
+            max-width: 220px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .illustration-container.bordered {
+             border: 2px solid #ccc;
+             border-radius: 8px;
+        }
+        
+        .feature-item p {
+            font-weight: 500;
+            color: #333;
+            font-size: 1rem;
+        }
+
+        /* Call to Action Button */
+        .cta-button {
+            background-color: #000;
+            color: #fff;
+            border: none;
+            padding: 16px 40px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            border-radius: 50px;
+            cursor: pointer;
+            width: 100%;
+            max-width: 280px;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+
+        .cta-button:hover {
+            background-color: #333;
+            transform: scale(1.05);
+        }
+
+        /* Responsive Design for smaller screens */
+        @media (max-width: 768px) {
+            .features {
+                grid-template-columns: 1fr;
+                gap: 50px;
+            }
+
+            .card {
+                padding: 30px 20px;
+            }
+
+            .header {
+                margin-bottom: 40px;
+            }
+            
+            .brand-name {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <header class="header">
+            <svg class="logo" viewBox="0 0 100 100" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                <path d="M30,20 L50,20 L70,40 L50,60 L30,40 Z M50,40 L70,60 L50,80 L30,60 L50,40 Z"/>
+            </svg>
+            <span class="brand-name">CHEDASSIST</span>
+        </header>
+
+        <main class="features">
+            <div class="feature-item">
+                <div class="illustration-container bordered">
+                    <svg width="80" height="80" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="20" y="25" width="60" height="50" rx="5" fill="white" stroke="#E0E0E0" stroke-width="2"/>
+                        <rect x="30" y="35" width="25" height="5" rx="2.5" fill="#6C63FF"/>
+                        <rect x="30" y="45" width="40" height="2" rx="1" fill="#BDBDBD"/>
+                        <rect x="30" y="52" width="40" height="2" rx="1" fill="#BDBDBD"/>
+                        <circle cx="70" cy="65" r="10" fill="#6C63FF"/>
+                        <path d="M70 60V70M65 65H75" stroke="white" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                </div>
+                <p>Add Tasks Effortlessly</p>
+            </div>
+            
+            <div class="feature-item">
+                <div class="illustration-container">
+                    <svg width="120" height="120" viewBox="0 0 150 150" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="75" cy="80" r="45" fill="#6C63FF" stroke="#3F3D56" stroke-width="4"/>
+                        <path d="M75 55V80L95 90" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M55 40L65 30" stroke="#3F3D56" stroke-width="4" stroke-linecap="round"/>
+                        <path d="M95 40L85 30" stroke="#3F3D56" stroke-width="4" stroke-linecap="round"/>
+                        <rect x="60" y="105" width="10" height="20" fill="#3F3D56"/>
+                        <ellipse cx="65" cy="125" rx="8" ry="3" fill="#3F3D56"/>
+                        <rect x="80" y="105" width="10" height="20" fill="#3F3D56"/>
+                        <ellipse cx="85" cy="125" rx="8" ry="3" fill="#3F3D56"/>
+                        <path d="M85 95C85 92.2386 82.7614 90 80 90H70C67.2386 90 65 92.2386 65 95V105H85V95Z" fill="#3F3D56"/>
+                        <circle cx="75" cy="85" r="5" fill="#3F3D56"/>
+                    </svg>
+                </div>
+                <p>Take Control of your Days</p>
+            </div>
+
+            <div class="feature-item">
+                <div class="illustration-container">
+                    <svg width="150" height="150" viewBox="0 0 150 150" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="60" y="70" width="10" height="20" fill="#3F3D56"/>
+                        <ellipse cx="65" cy="90" rx="8" ry="3" fill="#3F3D56"/>
+                        <path d="M75 60C75 57.2386 72.7614 55 70 55H60C57.2386 55 55 57.2386 55 60V70H75V60Z" fill="#3F3D56"/>
+                        <circle cx="65" cy="50" r="5" fill="#3F3D56"/>
+                        <rect x="20" y="40" width="110" height="60" rx="4" fill="white" stroke="#BDBDBD" stroke-width="2"/>
+                        <rect x="30" y="50" width="20" height="10" rx="2" fill="#6C63FF"/>
+                        <rect x="30" y="65" width="20" height="10" rx="2" fill="#EF5350"/>
+                        <rect x="65" y="50" width="20" height="10" rx="2" fill="#6C63FF"/>
+                        <rect x="100" y="50" width="20" height="10" rx="2" fill="#EF5350"/>
+                        <rect x="100" y="65" width="20" height="10" rx="2" fill="#6C63FF"/>
+                        <line x1="57" y1="40" x2="57" y2="100" stroke="#E0E0E0" stroke-width="2"/>
+                        <line x1="93" y1="40" x2="93" y2="100" stroke="#E0E0E0" stroke-width="2"/>
+                    </svg>
+                </div>
+                <p>Optimize your Schedule</p>
+            </div>
+        </main>
+
+        <button class="cta-button">Get Started</button>
+    </div>
+
+</body>
+</html>
