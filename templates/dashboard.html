@@ -22,6 +22,17 @@
             display: flex;
             background-color: beige;
         }
+	
+	div {
+	    font-weight: 500;
+	    border-radius: 6px;
+	    margin-bottom: 8px;
+	}
+
+	.d-flex {
+    	   height: 100vh; /* Full viewport height */
+    	   width: 100%;
+	}
 
         .sidebar-links h6 {
             font-size: 0.75rem;
@@ -69,22 +80,27 @@
         }
 
         /* Left: Task Form Section */
-        .form-section {
-            background-color: #4a7d7d;
-            padding: 20px;
-            border-radius: 10px;
-            width: 50%;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            color: white;
-        }
+       .form-section {
+    background-color: #4a7d7d;
+    padding: 20px;
+    border-radius: 10px;
+    width: 50%;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    color: white;
+}
 
-        .form-section input {
-            padding: 8px;
-            border: none;
-            border-radius: 5px;
-        }
+.form-section input,
+.form-section select {
+    padding: 12px;
+    border: none;
+    border-radius: 10px;
+    font-size: 1rem;
+    background-color: #ffffff;
+    color: #333;
+    font-weight: 500;
+}
 
         .date-time {
             display: flex;
@@ -138,7 +154,7 @@
 <body class="bg-beige">
 
     <!-- Sidebar -->
-    <<aside class="sidebar bg-dark text-white p-3">
+    <aside class="sidebar bg-dark text-white p-3">
         <div class="sidebar-header text-center mb-4">
             <img src="images/logo.png" alt="logo" class="img-fluid mb-2" style="max-width: 80px;">
             <h2 class="h5">SchedAssistant</h2>

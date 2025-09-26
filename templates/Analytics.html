@@ -16,6 +16,13 @@
             background-color: beige;
         }
 
+        html,
+        body {
+            height: 110%;
+            overflow: auto;
+            overscroll-behavior: none;
+        }
+
         .ward {
             width: 300px;
             /* set width */
@@ -27,6 +34,22 @@
             font-weight: bold;
             border-radius: 20px;
         }
+
+        div {
+            font-weight: 500;
+            border-radius: 6px;
+            margin-bottom: 8px;
+        }
+
+        .d-flex {
+            height: 130vh;
+            /* Full viewport height */
+            width: 100%;
+        }
+
+
+
+
 
         /* Sidebar Links */
         .sidebar-links h6 {
@@ -53,6 +76,21 @@
 
         .sidebar-links li a.active {
             background-color: #0b5ed7;
+        }
+
+        #completedTasksChart {
+            width: 100% !important;
+            height: auto !important;
+        }
+
+        #taskCategoryChart {
+            width: 350px !important;
+            height: 320px !important;
+        }
+
+        .table-responsive {
+            max-height: 400px;
+            overflow: auto;
         }
     </style>
     <!-- Chart.js -->
@@ -92,7 +130,7 @@
 
             <!-- Completed Tasks Graph -->
             <div class="row">
-                <div class="col-md-8">
+                <div class="col-md-7">
                     <div class="card mb-4 bg-dark text-white">
                         <div class="card-header">Completed Tasks</div>
                         <div class="card-body">
@@ -172,52 +210,60 @@
                     </div>
                 </div>
             </div>
+        </main>
     </div>
-    </main>
+
     <!-- Chart.js Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
-        // Line Chart: Completed Tasks
-  const ctx1 = document.getElementById('completedTasksChart').getContext('2d');
-  new Chart(ctx1, {
-    type: 'line',
-    data: {
-      labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
-      datasets: [{
-        label: 'Completed Tasks',
-        data: [1, 0, 2, 0, 3],
-         borderColor: '#ff4d4f',   // Line color (red, like urgent)
-        backgroundColor: 'rgba(255, 77, 79, 0.2)', // Transparent fill
-        pointBackgroundColor: ['#ff4d4f', '#ffc107', '#007bff', '#28a745', '#6f42c1'], // Custom colors per point
-      pointRadius: 6,
-      pointHoverRadius: 8,
-        fill: true,
-        tension: 0.3
-      }]
-    },
-    options: {
-      responsive: true,
-      interaction: {
-        mode: 'index',
-        intersect: false
-      },
-      plugins: {
-        legend: { display: true },
+        document.addEventListener('DOMContentLoaded', function () {
+      // Line Chart
+      const ctx1 = document.getElementById('completedTasksChart')?.getContext('2d');
+      if (ctx1) {
+        new Chart(ctx1, {
+          type: 'line',
+          data: {
+            labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
+            datasets: [{
+              label: 'Completed Tasks',
+              data: [1, 0, 2, 0, 3],
+              borderColor: '#ff4d4f',
+              backgroundColor: 'rgba(255, 77, 79, 0.2)',
+              pointBackgroundColor: ['#ff4d4f', '#ffc107', '#007bff', '#28a745', '#6f42c1'],
+              pointRadius: 8,
+              pointHoverRadius: 8,
+              fill: true,
+              tension: 0.3
+            }]
+          },
+          options: {
+            responsive: true,
+            interaction: {
+              mode: 'index',
+              intersect: false
+            },
+            plugins: {
+              legend: { display: true }
+            }
+          }
+        });
       }
-    }
-  });
-
-  // Pie Chart: Task Categories
-  const ctx2 = document.getElementById('taskCategoryChart').getContext('2d');
-  new Chart(ctx2, {
-    type: 'pie',
-    data: {
-      labels: ['Education', 'Work', 'Personal'],
-      datasets: [{
-        label: 'Task Distribution',
-        data: [2, 1, 1],
-        backgroundColor: ['#007bff', '#dc3545', '#ffc107']
-      }]
-    }
-  });
+    
+      // Pie Chart
+      const ctx2 = document.getElementById('taskCategoryChart')?.getContext('2d');
+      if (ctx2) {
+        new Chart(ctx2, {
+          type: 'pie',
+          data: {
+            labels: ['Education', 'Work', 'Personal'],
+            datasets: [{
+              label: 'Task Distribution',
+              data: [2, 1, 1],
+              backgroundColor: ['#007bff', '#dc3545', '#ffc107']
+            }]
+          }
+        });
+      }
+    });
+    </script>

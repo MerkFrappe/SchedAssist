@@ -16,11 +16,19 @@
         .bg-beige {
             background-color: beige;
         }
-        .weekly-header {
-        flex-grow: 1;
-        padding: 20px 0 20px 50px;
-        
+
+	  html, body {
+        height: 110%;
+        overflow: auto; 
+        overscroll-behavior: none; 
         }
+
+
+        .weekly-header {
+            flex-grow: 1;
+            padding: 20px 0 20px 50px;
+        }
+
         /* Sidebar Links */
         .sidebar-links h6 {
             font-size: 0.75rem;
@@ -90,7 +98,6 @@
                 <img src="{{ url_for('static', filename='images/logo.png') }}" alt="logo" class="img-fluid mb-2" style="max-width: 80px;">
                 <h2 class="h5">SchedAssistant</h2>
             </div>
-
             <ul class="list-unstyled sidebar-links">
                 <h6 class="text-uppercase">Main Menu</h6>
                 <li class="mb-2"><a href="{{ url_for('dashboard') }}"
@@ -105,12 +112,10 @@
             </ul>
         </aside>
         </main>
-    <div class="d-flex">
+
         <!-- Sidebar -->
-        <aside class="sidebar bg-dark text-white p-3">
-            <!-- Sidebar content here -->
-        </aside>
-    
+
+
         <!-- Main Content Area -->
         <main class="flex-grow-1 p-5 bg-beige text-dark">
             <!-- Weekly Header -->
@@ -118,7 +123,7 @@
                 <h2>Weekly Tasks</h2>
                 <p><strong>August 9, 2025</strong> | Second Week</p>
             </div>
-    
+
             <!-- Two-column layout: Left Panel + Table -->
             <div class="d-flex">
                 <!-- Left Panel -->
@@ -139,7 +144,7 @@
                     <button class="btn btn-outline-dark w-100">Personal</button>
                     <button class="btn btn-success mt-3 w-100">Mark Completed</button>
                 </aside>
-    
+
                 <!-- Task Table -->
                 <div class="flex-grow-1 ps-4">
                     <div class="table-responsive">
@@ -260,21 +265,21 @@
                                             <td></td>
                                             <td></td>
                                         </tr>
-                            
-                            
-                            
-                            
+
+
+
+
                                     </tbody>
                                 </table>
                             </div>
-                            </main>
-                            </div>
-                            </div>
-                        </table>
-                    </div>
-                </div>
-            </div>
         </main>
+    </div>
+    </div>
+    </table>
+    </div>
+    </div>
+    </div>
+    </main>
 
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
