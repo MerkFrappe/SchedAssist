@@ -1,1 +1,19 @@
 ECHO is on.
+
+# Python cache files
+__pycache__/
+*.pyc
+
+# Virtual environment
+venv/
+env/
+
+# Flask instance folder
+instance/
+
+# Environment variables
+.env
+
+# OS files
+.DS_Store
+Thumbs.db
