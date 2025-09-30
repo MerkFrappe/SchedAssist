@@ -75,19 +75,19 @@
 
         .content {
             display: flex;
-            justify-content: space-between;
-            gap: 30px;
+            justify-content: wrap;
+            gap: 40px;
         }
 
         /* Left: Task Form Section */
        .form-section {
-    background-color: #4a7d7d;
-    padding: 20px;
+     background-color: #4a7d7d;
+    padding: 30px; /* more breathing room */
     border-radius: 10px;
-    width: 50%;
+    width: 100%; /* full width inside flex container */
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 16px; /* more spacing between fields */
     color: white;
 }
 
@@ -101,6 +101,16 @@
     color: #333;
     font-weight: 500;
 }
+
+@media (max-width: 768px) {
+    .content {
+        flex-direction: column;
+    }
+
+    .form-section,
+    .task-table {
+        width: 100%;
+    }
 
         .date-time {
             display: flex;
@@ -181,42 +191,79 @@
             <div class="content">
                 <!-- Left: Task Form -->
                 <div class="form-section">
+		<form action="/submit" method="POST">
                     <label>Task Title</label>
-                    <input type="text" placeholder="Outline defense" />
+                   <input type="text" name="title" placeholder="{{ title or 'Outline defense' }}" />
 
                     <label>Date of Task</label>
                     <div class="date-time">
-                        <input type="date" />
-                        <input type="time" />
+                        <input type="date" name="date" value="{{ date }}">
+                        <input type="time" name="time" value="{{ time }}">
                     </div>
 
                     <label for="Priority">Priority</label>
-                    <select id="Priority" name="selectedOption">
-  		<option value="option1">Un-Essential</option>
-  		<option value="option2">Normal</option>
-  		<option value="option3">Important</option>
-		<option value="option4">Urgent</option>
+                    <select id="Priority" name="priority">
+  		<option value=="Un-Essential" {% if priority == 'Un-Essential' %}selected{% endif %}>Un-Essential</option>
+  		<option value="Normal" {% if priority == 'Normal' %}selected{% endif %}>Normal</option>
+  		<option value="Important" {% if priority == 'Important' %}selected{% endif %}>Important</option>
+		<option value="Urgent" {% if priority == 'Urgent' %}selected{% endif %}>Urgent</option>
 		</select>
 
                     <label for="Category">Category</label>
-                    <select id="Category" name="selectedOption">
-  		<option value="option1">Personal</option>
-  		<option value="option2">Work</option>
-  		<option value="option3">Education</option>
+                    <select id="Category" name="category">
+  		 <option value="Personal" {% if category == 'Personal' %}selected{% endif %}>Personal</option>
+        <option value="Work" {% if category == 'Work' %}selected{% endif %}>Work</option>
+        <option value="Education" {% if category == 'Education' %}selected{% endif %}>Education</option>
 		</select>
 
-
-                    <button class="add-btn">Add Task</button>
+     
+			<button class="add-btn" type={{ 'submit' }}>Add Task</button>
+           
                 </div>
-
+			</form>
                 <!-- Right: Task List -->
-                <div class="task-list">
-                    <h3>List of Created Tasks</h3>
-                    <div class="task-box">
-                        <!-- Tasks will be listed here -->
-                    </div>
-                    <button class="optimize-btn">Optimize</button>
-                </div>
+                <!-- Right: Task Table -->
+<div class="task-table" style="
+    background-color: white;
+    width: 60%;
+    border-radius: 10px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+">
+    <h3 style="margin-bottom: 10px;">Task Overview</h3>
+    <table style="
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        background-color: #f8f8f8;
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 0 0 1px #ccc;
+    ">
+        <thead style="background-color: #eaeaea;">
+            <tr>
+                <th style="padding: 12px;">Title</th>
+                <th style="padding: 12px;">Date</th>
+                <th style="padding: 12px;">Time</th>
+                <th style="padding: 12px;">Priority</th>
+                <th style="padding: 12px;">Category</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for task in tasks %}
+            <tr style="border-top: 1px solid #ddd;">
+                <td style="padding: 12px;">{{ task.title }}</td>
+                <td style="padding: 12px;">{{ task.date }}</td>
+                <td style="padding: 12px;">{{ task.time }}</td>
+                <td style="padding: 12px;">{{ task.priority }}</td>
+                <td style="padding: 12px;">{{ task.category }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
             </div>
         </div>
 

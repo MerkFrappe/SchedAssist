@@ -7,7 +7,28 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;700&display=swap" rel="stylesheet">
-     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+     <style> 
+
+	body {
+    font-family: 'Poppins', sans-serif;
+    background-color: beige;
+    margin: 0;
+    padding: 0;
+}
+.card {
+    background-color: #f0f0f0;
+    border-radius: 16px;
+    padding: 40px 60px;
+    width: 100%;
+    max-width: 960px;
+    margin: 40px auto;   /* Center horizontally with margin */
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+
+
+</style>
 </head>
 <body>
 
@@ -73,7 +94,7 @@
             </div>
         </main>
 
-        <button class="cta-button">Get Started</button>
+	<a href="{{ url_for('schedule') }}" class="cta-button">Get Started</a>
     </div>
 
 </body>
