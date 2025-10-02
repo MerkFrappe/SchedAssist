@@ -28,11 +28,33 @@
             border-radius: 6px;
             margin-bottom: 8px;
         }
+        
+        .h5 {
+            font-weight: bold;   /* or 700 for extra-bold */
+            }
+
+
+	.logo {
+  	    width: 120px;   /* exact width */
+            height: 120px;  /* exact height */
+            object-fit: contain; /* keeps it from stretching weirdly */
+        }
 
         .d-flex {
             height: 100vh;
             /* Full viewport height */
             width: 100%;
+        }
+
+        /*sidebar*/
+
+        .sidebar {
+        min-width: 300px;
+         max-width: 320px;
+        width: 300px;
+        height: 100vh; /* Add this line for full height */
+        display: flex;
+        flex-direction: column;
         }
 
         .sidebar-links h6 {
@@ -79,6 +101,8 @@
             justify-content: space-between;
             gap: 40px;
         }
+	
+	   
 
         /* Left: Task Form Section */
     .form-section {
@@ -125,6 +149,30 @@
     width: 100%;
     }
 
+
+	   .add-btn:hover {
+        background-color: #3b6666 !important;
+        border-color: #3b6666 !important;
+        }
+
+
+
+           .optimize-btn {
+                padding: 10px;
+                background-color: black;
+                color: white;
+                border: none;
+                border-radius: 10px;
+                cursor: pointer;
+                margin: 60px 0px 20px 0px;
+                
+            }
+
+	    .optimize-btn:hover {
+        	background-color: #3b6666 !important;
+        	border-color: #3b6666 !important;
+           }
+           
         @media (max-width: 768px) {
             .content {
                 flex-direction: column;
@@ -161,14 +209,7 @@
                 border: 1px solid #ccc;
             }
 
-            .optimize-btn {
-                padding: 10px;
-                background-color: black;
-                color: white;
-                border: none;
-                border-radius: 10px;
-                cursor: pointer;
-            }
+         
     </style>
 </head>
 
@@ -177,7 +218,10 @@
     <!-- Sidebar -->
     <aside class="sidebar bg-dark text-white p-3">
         <div class="sidebar-header text-center mb-4">
-            <img src="images/logo.png" alt="logo" class="img-fluid mb-2" style="max-width: 80px;">
+          <img src="{{ url_for('static', filename='icon/Icon.png') }}"
+     alt="SchedAssist logo" class="logo"
+     onerror="this.src='{{ url_for('static', filename='icon/Icon-fallback.png') }}'">
+
             <h2 class="h5">SchedAssistant</h2>
         </div>
 
@@ -228,7 +272,7 @@
                     </select>
             
                     <button class="add-btn" type="submit">Add Task</button>
-                </form>
+               
             </div>
                 
                 
@@ -272,12 +316,14 @@
                         </tr>
                         {% endfor %}
                     </tbody>
-                </table>
+                  
+                </table> 
+                      <button class="optimize-btn" type="submit">Optimize Tasks</button>      
             </div>
-
+            	
         </div>
     </div>
-
+    </form>
 </body>
 
 </html>

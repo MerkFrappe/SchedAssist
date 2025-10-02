@@ -1,101 +1,266 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SchedAssist</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;700&display=swap" rel="stylesheet">
-     <style> 
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>SchedAssist</title>
 
-	body {
-    font-family: 'Poppins', sans-serif;
-    background-color: beige;
-    margin: 0;
-    padding: 0;
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      --card-bg: #f0f0f0;
+      --accent: #6C63FF;
+      --muted: #BDBDBD;
+    }
+
+
+
+    *{box-sizing: border-box}
+    body{
+      font-family: 'Poppins', sans-serif;
+      background-color: beige;
+      margin: 0;
+      padding: 24px;
+      color: #222;
+    }
+
+
+     .hero {
+      text-align: center;
+      padding: 80px 20px;
+      background: linear-gradient(135deg, #0078d4, #00b4ff);
+      color: white;
+    }
+
+    .hero p {
+      font-size: 20px;
+      opacity: 0.9;
+    }
+
+    .card{
+      background-color: var(--card-bg);
+      border-radius: 16px;
+      padding: 28px;
+      width: 100%;
+      max-width: 960px;
+      margin: 28px auto;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.12);
+      position: relative;
+    }
+
+    /* HEADER */
+    .header{
+      display: flex;
+      align-items: center;
+       justify-content: center;
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+
+    .logo {
+  width: 20vw;     /* 20% of viewport width */
+  max-width: 200px;
+  height: auto;    /* keeps proportions */
 }
-.card {
-    background-color: #f0f0f0;
-    border-radius: 16px;
-    padding: 40px 60px;
-    width: 100%;
-    max-width: 960px;
-    margin: 40px auto;   /* Center horizontally with margin */
-    text-align: center;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-}
+
+    .brand-name{
+      font-weight: 700;
+      font-size: 1.4rem;
+      letter-spacing: .6px;
+    }
+
+    /* CAROUSEL WRAPPER */
+    .carousel-wrap{
+      position: relative;
+    }
+
+    /* main.features becomes a horizontal scroll container */
+    .features{
+      display: flex;
+      gap: 20px;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      -webkit-overflow-scrolling: touch;
+      padding: 12px 6px;
+      scroll-behavior: smooth;
+    }
+
+    /* hide scrollbar (desktop) while keeping accessibility */
+    .features::-webkit-scrollbar{ height: 8px; display: none; }
+    .features { scrollbar-width: none; -ms-overflow-style: none; }
+
+    .feature-item{
+      flex: 0 0 80%;             /* width of each slide (adjustable) */
+      max-width: 780px;
+      scroll-snap-align: center;
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+      text-align: center;
+      min-height: 180px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* SVG / images scale properly */
+    .illustration-container{
+      width: 100%;
+      max-width: 350px;
+      margin-bottom: 12px;
+    }
+    .illustration-container svg{
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    .feature-item p{
+      margin: 8px 0 0;
+      font-weight: 600;
+      color: #333;
+    }
+
+    /* Arrow buttons */
+    .carousel-btn{
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      background: rgba(0,0,0,0.5);
+      color: #fff;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      z-index: 10;
 
 
+     
 
-</style>
+	  
+
+    }
+    .carousel-btn:focus{ outline: 2px solid #fff; }
+    .carousel-btn.left{ left: 8px; }
+    .carousel-btn.right{ right: 8px; }
+
+    /* CTA */
+    .cta-button{
+       display: flex;                  /* make it a flex container */
+  align-items: center;            /* vertically center content */
+  justify-content: center;        /* horizontally center content */
+  margin: 18px auto 0;            /* auto left/right margin centers the button itself */
+  padding: 10px 18px;
+  background-color: black;
+  color: white;
+  border-radius: 10px;
+  text-decoration: none;
+  font-weight: 600;
+  width: fit-content;
+  cursor: pointer;
+
+    }
+
+  .cta-button:hover {
+        	background-color: #3b6666 !important;
+        	border-color: #3b6666 !important;
+           }
+    @media (min-width: 900px){
+      .feature-item{ flex: 0 0 46%; } 
+    }
+
+    @media (min-width: 1200px){
+      .feature-item{ flex: 0 0 30%; } /* multiple visible slides */
+      .features{ gap: 26px; padding: 20px 6px; }
+    }
+  </style>
 </head>
 <body>
 
-    <div class="card">
-        <header class="header">
-            <svg class="logo" viewBox="0 0 100 100" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                <path d="M30,20 L50,20 L70,40 L50,60 L30,40 Z M50,40 L70,60 L50,80 L30,60 L50,40 Z"/>
+ <section class="hero">
+    <header class="header">
+      <img src="{{ url_for('static', filename='icon/sCHED.png') }}"
+     alt="SchedAssist logo" class="logo"
+    <p>Your productivity companion starts here.</p>
+  </section>
+
+
+  <div class="card">
+    
+  </header>
+
+    <div class="carousel-wrap" aria-roledescription="carousel">
+     
+      <!-- Carousel content -->
+      <main class="features" id="features">
+        <article class="feature-item" role="group" aria-roledescription="slide" aria-label="Add Tasks Effortlessly">
+          <div class="illustration-container">
+            <!-- SVG 1 -->
+            <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+              <rect x="20" y="25" width="60" height="50" rx="5" fill="white" stroke="#E0E0E0" stroke-width="2"/>
+              <rect x="30" y="35" width="25" height="5" rx="2.5" fill="#6C63FF"/>
+              <rect x="30" y="45" width="40" height="2" rx="1" fill="#BDBDBD"/>
+              <rect x="30" y="52" width="40" height="2" rx="1" fill="#BDBDBD"/>
+              <circle cx="70" cy="65" r="10" fill="#6C63FF"/>
+              <path d="M70 60V70M65 65H75" stroke="white" stroke-width="2" stroke-linecap="round"/>
             </svg>
-            <span class="brand-name">CHEDASSIST</span>
-        </header>
+          </div>
+          <p>Add Tasks Effortlessly</p>
+        </article>
 
-        <main class="features">
-            <div class="feature-item">
-                <div class="illustration-container bordered">
-                    <svg width="80" height="80" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <rect x="20" y="25" width="60" height="50" rx="5" fill="white" stroke="#E0E0E0" stroke-width="2"/>
-                        <rect x="30" y="35" width="25" height="5" rx="2.5" fill="#6C63FF"/>
-                        <rect x="30" y="45" width="40" height="2" rx="1" fill="#BDBDBD"/>
-                        <rect x="30" y="52" width="40" height="2" rx="1" fill="#BDBDBD"/>
-                        <circle cx="70" cy="65" r="10" fill="#6C63FF"/>
-                        <path d="M70 60V70M65 65H75" stroke="white" stroke-width="2" stroke-linecap="round"/>
-                    </svg>
-                </div>
-                <p>Add Tasks Effortlessly</p>
-            </div>
-            
-            <div class="feature-item">
-                <div class="illustration-container">
-                    <svg width="120" height="120" viewBox="0 0 150 150" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <circle cx="75" cy="80" r="45" fill="#6C63FF" stroke="#3F3D56" stroke-width="4"/>
-                        <path d="M75 55V80L95 90" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-                        <path d="M55 40L65 30" stroke="#3F3D56" stroke-width="4" stroke-linecap="round"/>
-                        <path d="M95 40L85 30" stroke="#3F3D56" stroke-width="4" stroke-linecap="round"/>
-                        <rect x="60" y="105" width="10" height="20" fill="#3F3D56"/>
-                        <ellipse cx="65" cy="125" rx="8" ry="3" fill="#3F3D56"/>
-                        <rect x="80" y="105" width="10" height="20" fill="#3F3D56"/>
-                        <ellipse cx="85" cy="125" rx="8" ry="3" fill="#3F3D56"/>
-                        <path d="M85 95C85 92.2386 82.7614 90 80 90H70C67.2386 90 65 92.2386 65 95V105H85V95Z" fill="#3F3D56"/>
-                        <circle cx="75" cy="85" r="5" fill="#3F3D56"/>
-                    </svg>
-                </div>
-                <p>Take Control of your Days</p>
-            </div>
+        <article class="feature-item" role="group" aria-roledescription="slide" aria-label="Take Control of your Days">
+          <div class="illustration-container">
+            <!-- SVG 2 -->
+            <svg viewBox="0 0 150 150" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+              <circle cx="75" cy="80" r="45" fill="#6C63FF" stroke="#3F3D56" stroke-width="4"/>
+              <path d="M75 55V80L95 90" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M55 40L65 30" stroke="#3F3D56" stroke-width="4" stroke-linecap="round"/>
+              <path d="M95 40L85 30" stroke="#3F3D56" stroke-width="4" stroke-linecap="round"/>
+              <rect x="60" y="105" width="10" height="20" fill="#3F3D56"/>
+              <ellipse cx="65" cy="125" rx="8" ry="3" fill="#3F3D56"/>
+              <rect x="80" y="105" width="10" height="20" fill="#3F3D56"/>
+              <ellipse cx="85" cy="125" rx="8" ry="3" fill="#3F3D56"/>
+              <path d="M85 95C85 92.2386 82.7614 90 80 90H70C67.2386 90 65 92.2386 65 95V105H85V95Z" fill="#3F3D56"/>
+              <circle cx="75" cy="85" r="5" fill="#3F3D56"/>
+            </svg>
+          </div>
+          <p>Take Control of your Days</p>
+        </article>
 
-            <div class="feature-item">
-                <div class="illustration-container">
-                    <svg width="150" height="150" viewBox="0 0 150 150" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <rect x="60" y="70" width="10" height="20" fill="#3F3D56"/>
-                        <ellipse cx="65" cy="90" rx="8" ry="3" fill="#3F3D56"/>
-                        <path d="M75 60C75 57.2386 72.7614 55 70 55H60C57.2386 55 55 57.2386 55 60V70H75V60Z" fill="#3F3D56"/>
-                        <circle cx="65" cy="50" r="5" fill="#3F3D56"/>
-                        <rect x="20" y="40" width="110" height="60" rx="4" fill="white" stroke="#BDBDBD" stroke-width="2"/>
-                        <rect x="30" y="50" width="20" height="10" rx="2" fill="#6C63FF"/>
-                        <rect x="30" y="65" width="20" height="10" rx="2" fill="#EF5350"/>
-                        <rect x="65" y="50" width="20" height="10" rx="2" fill="#6C63FF"/>
-                        <rect x="100" y="50" width="20" height="10" rx="2" fill="#EF5350"/>
-                        <rect x="100" y="65" width="20" height="10" rx="2" fill="#6C63FF"/>
-                        <line x1="57" y1="40" x2="57" y2="100" stroke="#E0E0E0" stroke-width="2"/>
-                        <line x1="93" y1="40" x2="93" y2="100" stroke="#E0E0E0" stroke-width="2"/>
-                    </svg>
-                </div>
-                <p>Optimize your Schedule</p>
-            </div>
-        </main>
+        <article class="feature-item" role="group" aria-roledescription="slide" aria-label="Optimize your Schedule">
+          <div class="illustration-container">
+            <!-- SVG 3 -->
+            <svg viewBox="0 0 150 150" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+              <rect x="60" y="70" width="10" height="20" fill="#3F3D56"/>
+              <ellipse cx="65" cy="90" rx="8" ry="3" fill="#3F3D56"/>
+              <path d="M75 60C75 57.2386 72.7614 55 70 55H60C57.2386 55 55 57.2386 55 60V70H75V60Z" fill="#3F3D56"/>
+              <circle cx="65" cy="50" r="5" fill="#3F3D56"/>
+              <rect x="20" y="40" width="110" height="60" rx="4" fill="white" stroke="#BDBDBD" stroke-width="2"/>
+              <rect x="30" y="50" width="20" height="10" rx="2" fill="#6C63FF"/>
+              <rect x="30" y="65" width="20" height="10" rx="2" fill="#EF5350"/>
+              <rect x="65" y="50" width="20" height="10" rx="2" fill="#6C63FF"/>
+              <rect x="100" y="50" width="20" height="10" rx="2" fill="#EF5350"/>
+              <rect x="100" y="65" width="20" height="10" rx="2" fill="#6C63FF"/>
+              <line x1="57" y1="40" x2="57" y2="100" stroke="#E0E0E0" stroke-width="2"/>
+              <line x1="93" y1="40" x2="93" y2="100" stroke="#E0E0E0" stroke-width="2"/>
+            </svg>
+          </div>
+          <p>Optimize your Schedule</p>
+        </article>
+      </main>
 
-	<a href="{{ url_for('schedule') }}" class="cta-button">Get Started</a>
-    </div>
+    <a href="{{ url_for('schedule') }}" class="cta-button">Get Started</a>
+  </div>
 
-</body>
+ </body>
 </html>
