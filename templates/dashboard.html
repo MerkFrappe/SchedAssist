@@ -28,11 +28,6 @@
             border-radius: 6px;
             margin-bottom: 8px;
         }
-        
-        .h5 {
-            font-weight: bold;   /* or 700 for extra-bold */
-            }
-
 
 	.logo {
   	    width: 120px;   /* exact width */
@@ -44,17 +39,6 @@
             height: 100vh;
             /* Full viewport height */
             width: 100%;
-        }
-
-        /*sidebar*/
-
-        .sidebar {
-        min-width: 300px;
-         max-width: 320px;
-        width: 300px;
-        height: 100vh; /* Add this line for full height */
-        display: flex;
-        flex-direction: column;
         }
 
         .sidebar-links h6 {
@@ -101,11 +85,6 @@
             justify-content: space-between;
             gap: 40px;
         }
-
-        .hidden {
-        display: none;
-        }
-
 	
 	   
 
@@ -142,45 +121,7 @@
     flex: 1;
     }
     
-    
-
-    .custom-btn:hover {
-        background-color: #3b6666 !important;
-        border-color: #3b6666 !important;
-    }
-
-    .add-btn,
-    .remove-btn,
-    .add-reminder-btn {
-         margin-top: 20px;
-        padding: 14px 20px;
-        font-size: 1rem;
-        background-color: black;
-        color: white;
-        border: none;
-        border-radius: 10px;
-        cursor: pointer;
-        width: 100%;
-    }
-
-    .optimize-btn {
-        padding: 10px;
-        background-color: black;
-        color: white;
-        border: none;
-        border-radius: 10px;
-        cursor: pointer;
-        margin: 60px 0px 20px 0px;
-    }
-
-    .optimize-btn:hover {
-        background-color: #3b6666 !important;
-        border-color: #3b6666 !important;
-    }
-        @media (max-width: 768px) {
-            .content {
-                flex-direction: column;
-           .remove-reminder-btn {
+    .add-btn {
     margin-top: 20px;
     padding: 14px 20px;
     font-size: 1rem;
@@ -193,10 +134,30 @@
     }
 
 
-     .remove-reminder-btn:hover {
+	   .add-btn:hover {
         background-color: #3b6666 !important;
         border-color: #3b6666 !important;
         }
+
+        @media (max-width: 768px) {
+            .content {
+                flex-direction: column;
+            }
+
+            .form-section,
+            .task-table {
+                width: 100%;
+            }
+
+        
+    
+
+            /* Right: Task List Section */
+            .task-list {
+                background-color: white;
+                width: 60%;
+                border-radius: 10px;
+                padding: 20px;
                 display: flex;
                 flex-direction: column;
             }
@@ -214,7 +175,19 @@
                 border: 1px solid #ccc;
             }
 
-         
+            .optimize-btn {
+                padding: 10px;
+                background-color: black;
+                color: white;
+                border: none;
+                border-radius: 10px;
+                cursor: pointer;
+            }
+
+	    .optimize-btn:hover {
+        	background-color: #3b6666 !important;
+        	border-color: #3b6666 !important;
+           }
     </style>
 </head>
 
@@ -246,152 +219,87 @@
 
 
     <!-- Main Content -->
-    <!-- Main Content -->
-<!-- Main Content -->
-<div class="main-content">
-  <h1>Task Creation</h1>
-  <div class="content">
-    
-    <!-- Left: Task Form -->
-    <div class="form-section">
-      <form action="/submit" method="POST">
-        
-        <!-- Title -->
-        <label for="title">Task Title</label>
-        <input type="text" id="title" name="title" placeholder="Outline defense" required />
-
-        <!-- Date & Time -->
-        <label>Date of Task</label>
-        <div class="date-time">
-          <input type="date" name="date" required />
-          <input type="time" name="time" required />
-        </div>
-
-        <!-- Reminders -->
-        <label for="reminder-1">Reminders</label>
-        <div class="reminder-row" id="reminder-row-1">
-          <select name="reminders[]" id="reminder-1" class="form-select" aria-label="Primary reminder">
-            <option value="none">No Reminder</option>
-            <option value="5m">5 minutes before</option>
-            <option value="15m">15 minutes before</option>
-            <option value="30m">30 minutes before</option>
-            <option value="1h">1 hour before</option>
-            <option value="3h">3 hours before</option>
-            <option value="1d">1 day before</option>
-          </select>
-        </div>
-
-        <!-- Second reminder (hidden by default) -->
-        <div class="reminder-row hidden" id="reminder-row-2">
-          <select name="reminders[]" id="reminder-2" class="form-select" aria-label="Secondary reminder">
-            <option value="none">No Reminder</option>
-            <option value="5m">5 minutes before</option>
-            <option value="15m">15 minutes before</option>
-            <option value="30m">30 minutes before</option>
-            <option value="1h">1 hour before</option>
-            <option value="3h">3 hours before</option>
-            <option value="1d">1 day before</option>
-          </select>
-          <button type="button" class="btn btn-sm remove-btn custom-btn" id="remove-reminder-2" aria-label="Remove second reminder">Remove</button>
-        </div>
-
-        <!-- Controls -->
-        <div class="controls">
-          <button type="button" id="add-reminder-btn" class="btn btn-sm add-reminder-btn custom-btn" aria-controls="reminder-row-2">Add another reminder</button>
-          <p class="hint">You can set at most 2 reminders.</p>
-        </div>
-
-        <!-- Category -->
-        <label for="category">Category</label>
-        <select id="category" name="category">
-          <option value="Personal">Personal</option>
-          <option value="Work">Work</option>
-          <option value="Education">Education</option>
-        </select>
-
-        <!-- Submit -->
-        <button class="add-btn custom-btn" type="submit">Add Task</button>
-      </form>
-    </div>
-
-    <!-- Right: Task Table -->
-    <div class="task-table" style="
-      background-color: white;
-      width: 60%;
-      border-radius: 10px;
-      padding: 20px;
-      display: flex;
-      flex-direction: column;
+    <div class="main-content">
+        <h1>Task Creation</h1>
+        <div class="content">
+            <!-- Left: Task Form -->
+            <div class="form-section">
+                <form action="/submit" method="POST">
+                    <label for="title">Task Title</label>
+                    <input type="text" id="title" name="title" placeholder="Outline defense" required />
+            
+                    <label>Date of Task</label>
+                    <div class="date-time">
+                        <input type="date" name="date" required />
+                        <input type="time" name="time" required />
+                    </div>
+            
+                    <label for="priority">Priority</label>
+                    <select id="priority" name="priority">
+                        <option value="Un-Essential">Un-Essential</option>
+                        <option value="Normal">Normal</option>
+                        <option value="Important">Important</option>
+                        <option value="Urgent">Urgent</option>
+                    </select>
+            
+                    <label for="category">Category</label>
+                    <select id="category" name="category">
+                        <option value="Personal">Personal</option>
+                        <option value="Work">Work</option>
+                        <option value="Education">Education</option>
+                    </select>
+            
+                    <button class="add-btn" type="submit">Add Task</button>
+                </form>
+            </div>
+                
+                
+            <!-- Right: Task List -->
+            <!-- Right: Task Table -->
+            <div class="task-table" style="
+    background-color: white;
+    width: 60%;
+    border-radius: 10px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+">
+                <h3 style="margin-bottom: 10px;">Task Overview</h3>
+                <table style="
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        background-color: #f8f8f8;
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 0 0 1px #ccc;
     ">
-      <h3 style="margin-bottom: 10px;">Task Overview</h3>
-      <table style="
-          width: 100%;
-          border-collapse: separate;
-          border-spacing: 0;
-          background-color: #f8f8f8;
-          border-radius: 10px;
-          <button type="button" class="btn btn-sm remove-reminder-btn" id="remove-reminder-2" aria-label="Remove second reminder">Remove</button>
-          box-shadow: 0 0 0 1px #ccc;
-      ">
-        <thead style="background-color: #eaeaea;">
-          <tr>
-            <th style="padding: 12px;">Title</th>
-            <th style="padding: 12px;">Date</th>
-            <th style="padding: 12px;">Time</th>
-            <th style="padding: 12px;">Reminder</th>
-            <th style="padding: 12px;">Category</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for task in tasks %}
-          <tr style="border-top: 1px solid #ddd;">
-            <td style="padding: 12px;">{{ task.title }}</td>
-            <td style="padding: 12px;">{{ task.date }}</td>
-            <td style="padding: 12px;">{{ task.time }}</td>
-             <td style="padding: 12px;">
-      {% if task.reminders and task.reminders|select('ne', 'none')|list %}
-        Yes
-      {% else %}
-        No
-      {% endif %}
-    </td>
-            <td style="padding: 12px;">{{ task.category }}</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table> 
-      <button class="optimize-btn" type="submit">Optimize Tasks</button>
+                    <thead style="background-color: #eaeaea;">
+                        <tr>
+                            <th style="padding: 12px;">Title</th>
+                            <th style="padding: 12px;">Date</th>
+                            <th style="padding: 12px;">Time</th>
+                            <th style="padding: 12px;">Priority</th>
+                            <th style="padding: 12px;">Category</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for task in tasks %}
+                        <tr style="border-top: 1px solid #ddd;">
+                            <td style="padding: 12px;">{{ task.title }}</td>
+                            <td style="padding: 12px;">{{ task.date }}</td>
+                            <td style="padding: 12px;">{{ task.time }}</td>
+                            <td style="padding: 12px;">{{ task.priority }}</td>
+                            <td style="padding: 12px;">{{ task.category }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+			<button class="optimize-btn" type="submit">Optimize Tasks</button>
+            </div>
+        </div>
     </div>
 
-  </div> <!-- end of .content -->
-</div> <!-- end of .main-content -->
-
-    </div>
-    </form>
 </body>
-
-<script>
-document.addEventListener("DOMContentLoaded", function () {
-  const addBtn = document.getElementById("add-reminder-btn");
-  const reminderRow2 = document.getElementById("reminder-row-2");
-  const removeBtn2 = document.getElementById("remove-reminder-2");
-
-  // Add another reminder
-  addBtn.addEventListener("click", function () {
-    if (reminderRow2.classList.contains("hidden")) {
-      reminderRow2.classList.remove("hidden");
-      addBtn.disabled = true; // prevent adding more than 2
-    }
-  });
-
-  // Remove second reminder
-  removeBtn2.addEventListener("click", function () {
-    reminderRow2.classList.add("hidden");
-    document.getElementById("reminder-2").value = "none"; // reset selection
-    addBtn.disabled = false; // allow adding again
-  });
-});
-</script>
-
 
 </html>

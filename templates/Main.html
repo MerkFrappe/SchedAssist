@@ -17,6 +17,15 @@
             background-color: beige;
         }
 
+
+	.logo {
+	  width: 120px;   /* exact width */
+ 	 height: 120px;  /* exact height */
+ 	 object-fit: contain; /* keeps it from stretching weirdly */
+	}
+
+
+
         html,
         body {
             height: 110%;
@@ -124,7 +133,9 @@
         <!-- Sidebar -->
         <aside class="sidebar bg-dark text-white p-3">
             <div class="sidebar-header text-center mb-4">
-                <img src="{{ url_for('static', filename='images/logo.png') }}" alt="logo" class="img-fluid mb-2" style="max-width: 80px;">
+                <img src="{{ url_for('static', filename='icon/Icon.png') }}"
+     alt="SchedAssist logo" class="logo"
+     onerror="this.src='{{ url_for('static', filename='icon/Icon-fallback.png') }}'">
                 <h2 class="h5">SchedAssistant</h2>
             </div>
             <ul class="list-unstyled sidebar-links">
