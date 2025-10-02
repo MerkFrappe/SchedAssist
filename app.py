@@ -23,12 +23,14 @@ def analytics():
 
 @app.route('/submit', methods=['POST'])
 def submit():
+    reminders = request.form.getlist("reminders[]")
+    has_reminder = any(r != "none" for r in reminders)
     task = {
         'title': request.form.get('title'),
         'date': request.form.get('date'),
         'time': request.form.get('time'),
-        'priority': request.form.get('priority'),
-        'category': request.form.get('category')
+        'category': request.form.get('category'),
+        'has_reminder': has_reminder
     }
     tasks.append(task)
     return redirect(url_for('dashboard'))
