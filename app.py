@@ -33,14 +33,30 @@ def submit():
     end_date = request.form.get("end_date")
     end_time = request.form.get("end_time")
     category = request.form.get('category')
+    single_day = request.form.get("singleDay")
 
-    start_dt = datetime.strptime(f"{start_date} {start_time}", "%Y-%m-%d %H:%M")
-    end_dt = datetime.strptime(f"{end_date} {end_time}", "%Y-%m-%d %H:%M")
+    
+
+   
+
+    
+
+    if not end_date or end_date.lower() == "none":
+        end_date = start_date
+
+    # Validate start_date and start_time before parsing
+    if not start_date or not start_time:
+        return "Start date and time are required.", 400
+    try:
+        start_dt = datetime.strptime(f"{start_date} {start_time}", "%Y-%m-%d %H:%M")
+        end_dt = datetime.strptime(f"{end_date} {end_time}", "%Y-%m-%d %H:%M")
+    except ValueError:
+        return "Invalid date or time format.", 400
 
     duration = end_dt - start_dt
     hours, remainder = divmod(duration.total_seconds(), 3600)
-    minutes = remainder // 60
-    duration_str = f"{int(hours)}h {int(minutes)}m"
+    minutes = int(remainder // 60)
+    duration_str = f"{int(hours)}h {minutes}m"
 
     task = {
         "title": title,
