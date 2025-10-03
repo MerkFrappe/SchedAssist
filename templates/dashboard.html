@@ -15,6 +15,14 @@
 
   <!-- Custom CSS -->
   <style>
+
+    input[type="time"]::-webkit-calendar-picker-indicator {
+     display: none;
+    }
+
+    input[type="time"] {
+     -moz-appearance: textfield;
+    }
     body {
       margin: 0;
       font-family: sans-serif;
@@ -56,6 +64,7 @@
       text-transform: uppercase;
       color: #adb5bd;
       margin-bottom: 10px;
+      font-weight: 700;
     }
 
     .sidebar-links li a {
@@ -66,6 +75,7 @@
       border-radius: 6px;
       color: #fff;
       transition: background 0.2s ease-in-out;
+      font-weight: 600;
     }
 
     .sidebar-links li a:hover {
@@ -98,6 +108,7 @@
     .hidden {
       display: none;
     }
+
 
     /* Left: Task Form Section */
     .form-section {
@@ -219,18 +230,18 @@
 
           <!-- Date & Time -->
           <div class="date-time-row" style="display: flex; gap: 20px; width: 100%;">
-            <!-- Start -->
+   
             <div class="start-date" style="flex: 1; display: flex; flex-direction: column; margin-top: 30px;">
               <label>START Date of Task</label>
               <input type="date" name="start_date" id="start_date" required style="margin-bottom: 10px;" />
-              <input type="time" name="start_time" required />
+              <input type="time" name="start_time" class="form-control" required />
             </div>
 
-            <!-- End -->
+
             <div class="end-date" style="flex: 1; display: flex; flex-direction: column; margin-top: 30px;">
               <label>END Date of Task</label>
               <input type="date" name="end_date" id="end_date" required style="margin-bottom: 10px;" />
-              <input type="time" name="end_time" required />
+              <input type="time" name="end_time" class="form-control" required />
 
               <!-- Checkbox -->
               <label style="font-size: 0.85rem; display: flex; align-items: center; gap: 6px; margin-top: 8px;">
