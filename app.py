@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request, redirect, url_for
-from datetime import datetime
+from datetime import datetime, timedelta
 
 app = Flask(__name__)
 
@@ -24,9 +24,7 @@ def analytics():
 
 @app.route('/submit', methods=['POST'])
 def submit():
-    reminders = request.form.getlist("reminders[]")
-    has_reminder = any(r != "none" for r in reminders)
-
+   
     title = request.form.get('title')
     start_date = request.form.get("start_date")
     start_time = request.form.get("start_time")
@@ -35,18 +33,26 @@ def submit():
     category = request.form.get('category')
     single_day = request.form.get("singleDay")
 
+    reminder_offsets = {
+    "5m": timedelta(minutes=5),
+    "15m": timedelta(minutes=15),
+    "30m": timedelta(minutes=30),
+    "1h": timedelta(hours=1),
+    "3h": timedelta(hours=3),
+    "1d": timedelta(days=1)
+    }
+
+    reminders = request.form.getlist("reminders[]")
+    has_reminder = any(r != "none" for r in reminders)
     
 
-   
-
-    
 
     if not end_date or end_date.lower() == "none":
         end_date = start_date
 
-    # Validate start_date and start_time before parsing
     if not start_date or not start_time:
         return "Start date and time are required.", 400
+    
     try:
         start_dt = datetime.strptime(f"{start_date} {start_time}", "%Y-%m-%d %H:%M")
         end_dt = datetime.strptime(f"{end_date} {end_time}", "%Y-%m-%d %H:%M")
@@ -58,6 +64,58 @@ def submit():
     minutes = int(remainder // 60)
     duration_str = f"{int(hours)}h {minutes}m"
 
+
+
+#CALCULATION OF PRIORITY SCORE
+    #calculates the time remaining from time to task time
+    #urgency = datetime.now() - start_dt
+    urgency_min = max(0, (datetime.now() - start_dt).total_seconds() / 60)
+    duration_min = duration.total_seconds() / 60
+
+    # Custom urgency that stays positive and peaks near present
+    delta_min = (datetime.now() - start_dt).total_seconds() / 60
+    if delta_min >= 0:
+        urgency_custom = 1000 + delta_min
+    else:
+        urgency_custom = 1000 / (1 + abs(delta_min) / 60)
+   
+    match category:
+        case "Personal":
+             category_weight = 1
+        case "Education" | "Work":
+             category_weight = 2
+        case _:
+            return "Misinput"
+        
+    valid_reminders = [reminder_offsets[r] for r in reminders if r in reminder_offsets]
+    reminder_count = len(valid_reminders)
+
+
+    #note: need to set weight in dashboard.html
+
+    importance = category_weight * reminder_count
+
+    #OVERALL SCORE TALLY
+    score = (urgency_custom * 0.35) + (importance * 0.35) - (duration_min * 0.1)
+
+    #might need this
+    #reminder_times = [start_dt - offset for offset in valid_reminders]
+    #lead_time_min = max(0, (start_dt - datetime.now()).total_seconds() / 60)
+
+
+    #testing
+    print("Start date:", start_date)
+    print("Start time:", start_time)
+    print("Parsed start_dt:", start_dt)
+    print("Reminders received:", reminders)
+    print("Valid reminders:", valid_reminders)
+    print("Reminder count:", reminder_count)
+    print("Category weight:", category_weight)
+    print("Urgency:", urgency_custom)
+    print("Duration (min):", duration_min)
+    print("Importance:", importance)
+    print("Score:", score)
+   
     task = {
         "title": title,
         "start": start_dt.strftime("%Y-%m-%d %H:%M"),
@@ -68,7 +126,10 @@ def submit():
         }
     tasks.append(task)
     return redirect(url_for('dashboard'))
+    
+    
 
+  
 if __name__ == "__main__":
     app.run(debug=True)
 
