@@ -34,12 +34,13 @@ def submit():
     single_day = request.form.get("singleDay")
 
     reminder_offsets = {
-    "5m": timedelta(minutes=5),
-    "15m": timedelta(minutes=15),
-    "30m": timedelta(minutes=30),
-    "1h": timedelta(hours=1),
-    "3h": timedelta(hours=3),
-    "1d": timedelta(days=1)
+     "5m": (timedelta(minutes=5), 5),
+    "10m": (timedelta(minutes=10), 15),
+    "15m": (timedelta(minutes=15), 10),
+    "30m": (timedelta(minutes=30), 8),
+    "1h": (timedelta(hours=1), 10),
+    "3h": (timedelta(hours=3), 7),
+    "1d": (timedelta(days=1), 5)
     }
 
     reminders = request.form.getlist("reminders[]")
@@ -69,34 +70,37 @@ def submit():
 #CALCULATION OF PRIORITY SCORE
     #calculates the time remaining from time to task time
     #urgency = datetime.now() - start_dt
-    urgency_min = max(0, (datetime.now() - start_dt).total_seconds() / 60)
+    # Ensure duration is defined
+    duration = end_dt - start_dt
     duration_min = duration.total_seconds() / 60
 
-    # Custom urgency that stays positive and peaks near present
-    delta_min = (datetime.now() - start_dt).total_seconds() / 60
-    if delta_min >= 0:
-        urgency_custom = 1000 + delta_min
-    else:
-        urgency_custom = 1000 / (1 + abs(delta_min) / 60)
-   
+# Normalize category
+    category = category.capitalize()
+
     match category:
         case "Personal":
-             category_weight = 1
+            category_weight = 1
         case "Education" | "Work":
-             category_weight = 2
+            category_weight = 2
         case _:
-            return "Misinput"
-        
+            category_weight = 1  # fallback instead of return
+
+# Reminder parsing
+
     valid_reminders = [reminder_offsets[r] for r in reminders if r in reminder_offsets]
-    reminder_count = len(valid_reminders)
+    reminder_value_total = sum(val for _, val in valid_reminders)
 
+    importance = category_weight * reminder_value_total
 
-    #note: need to set weight in dashboard.html
+# Urgency logic
+    delta_min = (datetime.now() - start_dt).total_seconds() / 60
+    urgency_custom = 1000 + delta_min if delta_min >= 0 else 1000 / (1 + abs(delta_min) / 60)
 
-    importance = category_weight * reminder_count
+# Duration penalty scaled by importance
+    duration_penalty = (duration_min * 0.1) / (1 + importance)
 
-    #OVERALL SCORE TALLY
-    score = (urgency_custom * 0.35) + (importance * 0.35) - (duration_min * 0.1)
+# Final score
+    score = (urgency_custom * 0.35) + (importance * 0.7) - duration_penalty
 
     #might need this
     #reminder_times = [start_dt - offset for offset in valid_reminders]
@@ -109,7 +113,7 @@ def submit():
     print("Parsed start_dt:", start_dt)
     print("Reminders received:", reminders)
     print("Valid reminders:", valid_reminders)
-    print("Reminder count:", reminder_count)
+    print("Reminder count:", reminder_value_total)
     print("Category weight:", category_weight)
     print("Urgency:", urgency_custom)
     print("Duration (min):", duration_min)
