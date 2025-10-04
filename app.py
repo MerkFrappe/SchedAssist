@@ -26,12 +26,9 @@ def analytics():
 def submit():
    
     title = request.form.get('title')
-    start_date = request.form.get("start_date")
-    start_time = request.form.get("start_time")
-    end_date = request.form.get("end_date")
-    end_time = request.form.get("end_time")
+    hours = int(request.form.get("duration_hours", 0))
+    minutes = int(request.form.get("duration_minutes", 0))
     category = request.form.get('category')
-    single_day = request.form.get("singleDay")
 
     reminder_offsets = {
      "5m": (timedelta(minutes=5), 5),
@@ -45,34 +42,27 @@ def submit():
 
     reminders = request.form.getlist("reminders[]")
     has_reminder = any(r != "none" for r in reminders)
-    
 
-
-    if not end_date or end_date.lower() == "none":
-        end_date = start_date
-
-    if not start_date or not start_time:
-        return "Start date and time are required.", 400
-    
+    duration_minutes = hours * 60 + minutes
+    #deadline
     try:
-        start_dt = datetime.strptime(f"{start_date} {start_time}", "%Y-%m-%d %H:%M")
-        end_dt = datetime.strptime(f"{end_date} {end_time}", "%Y-%m-%d %H:%M")
+        deadline = datetime.strptime(request.form.get('deadline'), "%Y-%m-%dT%H:%M")
     except ValueError:
         return "Invalid date or time format.", 400
+    
+    now = datetime.now()
+    remaining_time = (deadline - now).total_seconds() / 60
 
-    duration = end_dt - start_dt
-    hours, remainder = divmod(duration.total_seconds(), 3600)
-    minutes = int(remainder // 60)
-    duration_str = f"{int(hours)}h {minutes}m"
-
-
-
+    if remaining_time <= 0:
+        urgency_score = 100  # overdue or immediate
+    else:
+        urgency_score = min((1 / remaining_time) * 100 + duration_minutes * 0.5, 100)
+    
+    
 #CALCULATION OF PRIORITY SCORE
     #calculates the time remaining from time to task time
     #urgency = datetime.now() - start_dt
     # Ensure duration is defined
-    duration = end_dt - start_dt
-    duration_min = duration.total_seconds() / 60
 
 # Normalize category
     category = category.capitalize()
@@ -92,41 +82,37 @@ def submit():
 
     importance = category_weight * reminder_value_total
 
-# Urgency logic
-    delta_min = (datetime.now() - start_dt).total_seconds() / 60
-    urgency_custom = 1000 + delta_min if delta_min >= 0 else 1000 / (1 + abs(delta_min) / 60)
+# Flexibility 
+    task_type = request.form.get('task_type', 'uninterrupted')
+    is_flexible = task_type == 'flexible'
 
-# Duration penalty scaled by importance
-    duration_penalty = (duration_min * 0.1) / (1 + importance)
+    flexibility_weight = 1.0 if is_flexible else 1.2
+
 
 # Final score
-    score = (urgency_custom * 0.35) + (importance * 0.7) - duration_penalty
-
-    #might need this
-    #reminder_times = [start_dt - offset for offset in valid_reminders]
-    #lead_time_min = max(0, (start_dt - datetime.now()).total_seconds() / 60)
+    score = (urgency_score * 0.35) + (importance * 0.7) * flexibility_weight
 
 
     #testing
-    print("Start date:", start_date)
-    print("Start time:", start_time)
-    print("Parsed start_dt:", start_dt)
+    print("Title:", title)
+    print("Duration:", duration_minutes)
+    print("Deadline", deadline)
     print("Reminders received:", reminders)
     print("Valid reminders:", valid_reminders)
     print("Reminder count:", reminder_value_total)
     print("Category weight:", category_weight)
-    print("Urgency:", urgency_custom)
-    print("Duration (min):", duration_min)
+    print("Flexible:", flexibility_weight)
     print("Importance:", importance)
     print("Score:", score)
    
     task = {
-        "title": title,
-        "start": start_dt.strftime("%Y-%m-%d %H:%M"),
-        "end": end_dt.strftime("%Y-%m-%d %H:%M"),
-        "duration": duration_str,
+         "title": title,
+        "deadline": deadline.strftime("%Y-%m-%d %H:%M"),
+         "duration": f"{duration_minutes} min",
+        "is_flexible": is_flexible,
+        "reminders": reminders,
         "reminder": has_reminder,
-        "category": category
+        "category": category,
         }
     tasks.append(task)
     return redirect(url_for('dashboard'))

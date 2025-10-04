@@ -5,186 +5,64 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SchedAssistant</title>
-
-    <!-- Bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-
-	
-
-    <!-- Google Icons -->
     <link rel="stylesheet"
         href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
-
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;700&display=swap" rel="stylesheet">
-
-
-    <!-- Custom CSS -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;700&display=swap" rel="stylesheet">
     <style>
-        input[type="time"]::-webkit-calendar-picker-indicator {
-            display: none;
-        }
-
-        input[type="time"] {
-            -moz-appearance: textfield;
-        }
-
-        body {
-            margin: 0;
-            display: flex;
-            background-color: beige;
-        }
-
-        .h5 {
-            font-weight: bold;
-        }
-
-        .logo {
-            width: 120px;
-            height: 120px;
-            object-fit: contain;
-        }
-
-        .d-flex {
-            height: 100vh;
-            width: 100%;
-        }
-
-        .sidebar {
-            min-width: 300px;
-            max-width: 320px;
-            width: 300px;
-        }
-
-        .sidebar-links h6 {
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            color: #adb5bd;
-            margin-bottom: 10px;
-            font-weight: 600;
-        }
-
-        .sidebar-links li a {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 10px;
-            border-radius: 6px;
-            color: #fff;
-            transition: background 0.2s ease-in-out;
-            font-weight: 600;
-        }
-
-        .sidebar-links li a:hover {
-            background-color: #0d6efd;
-            text-decoration: none;
-        }
-
-        .sidebar-links li a.active {
-            background-color: #0b5ed7;
-        }
-
-        /* Main Content */
-        .main-content {
-            background-color: #f5f0e6;
-            padding: 30px;
-            flex-grow: 1;
-            color: black;
-        }
-
-        .main-content h1 {
-            margin-bottom: 20px;
-        }
-
-        .content {
-            display: flex;
-            justify-content: space-between;
-            gap: 40px;
-        }
-
-        .hidden {
-            display: none;
-        }
-
-
-        /* Left: Task Form Section */
-        .form-section {
-            background-color: #4a7d7d;
-            padding: 30px;
-            border-radius: 10px;
-            width: 45%;
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-            color: white;
-        }
-
-        .form-section input,
-        .form-section select {
-            padding: 14px;
-            border: none;
-            border-radius: 10px;
-            font-size: 1rem;
-            background-color: #ffffff;
-            color: #333;
-            font-weight: 500;
-            width: 100%;
-        }
-
-        .custom-btn:hover {
-            background-color: #3b6666 !important;
-            border-color: #3b6666 !important;
-        }
-
-        .add-btn,
-        .remove-btn,
-        .add-reminder-btn {
-            margin-top: 20px;
-            padding: 14px 20px;
-            font-size: 1rem;
-            background-color: black;
-            color: white;
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
-            width: 100%;
-        }
-
-        .optimize-btn {
-            padding: 10px;
-            background-color: black;
-            color: white;
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
-            margin: 60px 0px 20px 0px;
-        }
-
-        .optimize-btn:hover {
-            background-color: #3b6666 !important;
-            border-color: #3b6666 !important;
-        }
-
+        /* ...existing CSS unchanged... */
+        
+        input[type="time"]::-webkit-calendar-picker-indicator { display: none; }
+        
+        input[type="time"] { -moz-appearance: textfield; }
+        
+        body { margin: 0; display: flex; background-color: beige; }
+        
+        .h5 { font-weight: bold; }
+        
+        .logo { width: 120px; height: 120px; object-fit: contain; }
+        
+        .d-flex { height: 100vh; width: 100%; }
+        
+        .sidebar { min-width: 300px; max-width: 320px; width: 300px; }
+        
+        .sidebar-links h6 { font-size: 0.75rem; text-transform: uppercase; color: #adb5bd; margin-bottom: 10px; font-weight: 600; }
+        
+        .sidebar-links li a { display: flex; align-items: center; gap: 8px; padding: 10px; border-radius: 6px; color: #fff; transition: background 0.2s ease-in-out; font-weight: 600; }
+        
+        .sidebar-links li a:hover { background-color: #0d6efd; text-decoration: none; }
+        
+        .sidebar-links li a.active { background-color: #0b5ed7; }
+        
+        .main-content { background-color: #f5f0e6; padding: 30px; flex-grow: 1; color: black; }
+        
+        .main-content h1 { margin-bottom: 20px; }
+        
+        .content { display: flex; justify-content: space-between; gap: 40px; }
+        
+        .hidden { display: none; }
+        .form-section { background-color: #4a7d7d; padding: 30px; border-radius: 10px; width: 45%; display: flex; flex-direction: column; gap: 16px; color: white; }
+        
+        .form-section input, .form-section select { padding: 14px; border: none; border-radius: 10px; font-size: 1rem; background-color: #ffffff; color: #333; font-weight: 500; width: 100%; }
+        
+        .form-section label { font-weight: 600; margin-top: 10px; }
+        
+        .form-section .form-group { display: flex; flex-direction: column; gap: 10px; }
+        
+        .custom-btn:hover { background-color: #3b6666 !important; border-color: #3b6666 !important; }
+        
+        .add-btn, .remove-btn, .add-reminder-btn { margin-top: 30px; padding: 14px 20px; font-size: 1rem; background-color: black; color: white; border: none; border-radius: 10px; cursor: pointer; width: 100%; }
+        
+        .optimize-btn { padding: 10px; background-color: black; color: white; border: none; border-radius: 10px; cursor: pointer; margin: 60px 0px 20px 0px; }
+        
+        .optimize-btn:hover { background-color: #3b6666 !important; border-color: #3b6666 !important; }
+        
         @media (max-width: 768px) {
-            .content {
-                flex-direction: column;
-            }
-
-            .remove-reminder-btn {
-                margin-top: 20px;
-                padding: 14px 20px;
-                font-size: 1rem;
-                background-color: black;
-                color: white;
-                border: none;
-                border-radius: 10px;
-                cursor: pointer;
-                width: 100%;
-            }
-
-            .remove-reminder-btn:hover {
-                background-color: #3b6666 !important;
-                border-color: #3b6666 !important;
-            }
+            .content { flex-direction: column; }
+            
+            .remove-reminder-btn { margin-top: 20px; padding: 14px 20px; font-size: 1rem; background-color: black; color: white; border: none; border-radius: 10px; cursor: pointer; width: 100%; }
+            
+            .remove-reminder-btn:hover { background-color: #3b6666 !important; border-color: #3b6666 !important; }
         }
     </style>
 </head>
@@ -195,19 +73,17 @@
     <aside class="sidebar bg-dark text-white p-3">
         <div class="sidebar-header text-center mb-4">
             <img src="{{ url_for('static', filename='icon/Icon.png') }}" alt="SchedAssist logo" class="logo"
-        onerror="this.src='{{ url_for('static', filename='icon/Icon-fallback.png') }}'">
-
+                onerror="this.src='{{ url_for('static', filename='icon/Icon-fallback.png') }}'">
             <h2 class="h5">SchedAssistant</h2>
         </div>
-
         <ul class="list-unstyled sidebar-links">
             <h6 class="text-uppercase">Main Menu</h6>
             <li class="mb-2"><a href="{{ url_for('dashboard') }}" class="text-white text-decoration-none"><span
-            class="material-symbols-outlined">dashboard</span>Dashboard</a></li>
+                        class="material-symbols-outlined">dashboard</span>Dashboard</a></li>
             <li class="mb-2"><a href="{{ url_for('schedule') }}" class="text-white text-decoration-none"><span
-            class="material-symbols-outlined">calendar_month</span>Schedule</a></li>
+                        class="material-symbols-outlined">calendar_month</span>Schedule</a></li>
             <li class="mb-2"><a href="{{ url_for('analytics') }}" class="text-white text-decoration-none"><span
-            class="material-symbols-outlined">monitoring</span>Analytics</a></li>
+                        class="material-symbols-outlined">monitoring</span>Analytics</a></li>
         </ul>
     </aside>
 
@@ -225,73 +101,65 @@
                     <input type="text" id="title" name="title" placeholder="Outline defense" required />
 
                     <!-- Date & Time -->
-                    <div class="date-time-row" style="display: flex; gap: 20px; width: 100%;">
+                    <div class="end-date" style="flex: 1; display: flex; flex-direction: column; margin-top: 30px;">
+                        <label for="deadline">Deadline</label>
+                        <input type="datetime-local" name="deadline" id="end_date" required style="margin-bottom: 10px;" />
+                        <label for="duration_hours">Duration</label>
+<div style="display: flex; gap: 10px;">
+  <input type="number" name="duration_hours" min="0" max="23" placeholder="Hours" required />
+  <input type="number" name="duration_minutes" min="0" max="59" placeholder="Minutes" required />
+</div>
 
-                        <div class="start-date"
-                            style="flex: 1; display: flex; flex-direction: column; margin-top: 30px;">
-                            <label>START Date of Task</label>
-                            <input type="date" name="start_date" id="start_date" required style="margin-bottom: 10px;" />
-                            <input type="time" name="start_time" class="form-control" required />
-                        </div>
-
-
-                        <div class="end-date" style="flex: 1; display: flex; flex-direction: column; margin-top: 30px;">
-                            <label>END Date of Task</label>
-                            <input type="date" name="end_date" id="end_date" required style="margin-bottom: 10px;" />
-                            <input type="time" name="end_time" class="form-control" required />
-
-                            <!-- Checkbox -->
-                            <label style="font-size: 0.85rem; display: flex; align-items: center; gap: 6px; margin-top: 8px;">
-                <input type="checkbox" id="singleDay" checked
-                  style="width: 16px; height: 16px; margin: 0;" />
-                <span>Task occurs on a single day</span>
-              </label>
-                        </div>
+                        <!-- Flexible checkbox -->
+                        <label style="font-size: 0.85rem; display: flex; align-items: center; gap: 6px; margin-top: 8px;">
+                            <input type="checkbox" name="is_flexible" style="width: 16px; height: 16px; margin: 0;" />
+                            <span>Task is flexible (can be split or moved)</span>
+                        </label>
                     </div>
 
                     <!-- Reminders -->
                     <label for="reminder-1">Reminders</label>
                     <div class="reminder-row" id="reminder-row-1">
                         <select name="reminders[]" id="reminder-1" class="form-select" aria-label="Primary reminder">
-              <option value="none">No Reminder</option>
-              <option value="5m">5 minutes before</option>
-              <option value="15m">15 minutes before</option>
-              <option value="30m">30 minutes before</option>
-              <option value="1h">1 hour before</option>
-              <option value="3h">3 hours before</option>
-              <option value="1d">1 day before</option>
-            </select>
+                            <option value="none">No Reminder</option>
+                            <option value="5m">5 minutes before</option>
+                            <option value="15m">15 minutes before</option>
+                            <option value="30m">30 minutes before</option>
+                            <option value="1h">1 hour before</option>
+                            <option value="3h">3 hours before</option>
+                            <option value="1d">1 day before</option>
+                        </select>
                     </div>
 
                     <!-- Second reminder (hidden by default) -->
-                    <div class="reminder-row hidden" id="reminder-row-2">
+                    <div class="reminder-row hidden" id="reminder-row-2" style="padding-top: 20px;">
                         <select name="reminders[]" id="reminder-2" class="form-select" aria-label="Secondary reminder">
-              <option value="none">No Reminder</option>
-              <option value="5m">5 minutes before</option>
-              <option value="15m">15 minutes before</option>
-              <option value="30m">30 minutes before</option>
-              <option value="1h">1 hour before</option>
-              <option value="3h">3 hours before</option>
-              <option value="1d">1 day before</option>
-            </select>
+                            <option value="none">No Reminder</option>
+                            <option value="5m">5 minutes before</option>
+                            <option value="15m">15 minutes before</option>
+                            <option value="30m">30 minutes before</option>
+                            <option value="1h">1 hour before</option>
+                            <option value="3h">3 hours before</option>
+                            <option value="1d">1 day before</option>
+                        </select>
                         <button type="button" class="btn btn-sm remove-btn custom-btn" id="remove-reminder-2"
-              aria-label="Remove second reminder">Remove</button>
+                            aria-label="Remove second reminder">Remove</button>
                     </div>
 
                     <!-- Controls -->
                     <div class="controls">
                         <button type="button" id="add-reminder-btn" class="btn btn-sm add-reminder-btn custom-btn"
-              aria-controls="reminder-row-2">Add another reminder</button>
+                            aria-controls="reminder-row-2">Add another reminder</button>
                         <p class="hint">You can set at most 2 reminders.</p>
                     </div>
 
                     <!-- Category -->
                     <label for="category">Category</label>
                     <select id="category" name="category">
-            <option value="Personal">Personal</option>
-            <option value="Work">Work</option>
-            <option value="Education">Education</option>
-          </select>
+                        <option value="Personal">Personal</option>
+                        <option value="Work">Work</option>
+                        <option value="Education">Education</option>
+                    </select>
 
                     <!-- Submit -->
                     <button class="add-btn custom-btn" type="submit">Add Task</button>
@@ -307,10 +175,10 @@
                     <thead style="background-color: #eaeaea;">
                         <tr>
                             <th style="padding: 12px; text-align: left;">Title</th>
-                            <th style="padding: 12px; text-align: left;">Start</th>
-                            <th style="padding: 12px; text-align: left;">End</th>
+                            <th style="padding: 12px; text-align: left;">Deadline</th>
                             <th style="padding: 12px; text-align: left;">Duration</th>
-                            <th style="padding: 12px; text-align: left;">Reminder</th>
+                            <th style="padding: 12px; text-align: left;">Flexible?</th>
+                            <th style="padding: 12px; text-align: left;">Reminders</th>
                             <th style="padding: 12px; text-align: left;">Category</th>
                         </tr>
                     </thead>
@@ -318,9 +186,9 @@
                         {% for task in tasks %}
                         <tr style="border-top: 1px solid #ddd;">
                             <td style="padding: 12px;">{{ task.title }}</td>
-                            <td style="padding: 12px;">{{ task.start }}</td>
-                            <td style="padding: 12px;">{{ task.end }}</td>
+                            <td style="padding: 12px;">{{ task.deadline }}</td>
                             <td style="padding: 12px;">{{ task.duration }}</td>
+                            <td>{{ 'Yes' if task.is_flexible else 'No' }}</td>
                             <td style="padding: 12px;">
                                 {% if task.reminders and task.reminders|select('ne', 'none')|list %}
                                 Yes
@@ -328,6 +196,7 @@
                                 No
                                 {% endif %}
                             </td>
+                            
                             <td style="padding: 12px;">{{ task.category }}</td>
                         </tr>
                         {% endfor %}
@@ -340,47 +209,37 @@
 
     <script>
         document.addEventListener("DOMContentLoaded", function () {
-      const addBtn = document.getElementById("add-reminder-btn");
-      const reminderRow2 = document.getElementById("reminder-row-2");
-      const removeBtn2 = document.getElementById("remove-reminder-2");
+            const addBtn = document.getElementById("add-reminder-btn");
+            const reminderRow2 = document.getElementById("reminder-row-2");
+            const removeBtn2 = document.getElementById("remove-reminder-2");
 
-      // Add another reminder
-      addBtn.addEventListener("click", function () {
-        if (reminderRow2.classList.contains("hidden")) {
-          reminderRow2.classList.remove("hidden");
-          addBtn.disabled = true; 
-	  addBtn.style.display = "none";       
-        }
-      });
+            // Add another reminder
+            addBtn.addEventListener("click", function () {
+                if (reminderRow2.classList.contains("hidden")) {
+                    reminderRow2.classList.remove("hidden");
+                    addBtn.disabled = true;
+                    addBtn.style.display = "none";
+                }
+            });
 
-      // Remove second reminder
-      removeBtn2.addEventListener("click", function () {
-        reminderRow2.classList.add("hidden");
-        document.getElementById("reminder-2").value = "none";
-        addBtn.disabled = false; // allow adding again
-	addBtn.style.display = "inline-block";
-      });
+            // Remove second reminder
+            removeBtn2.addEventListener("click", function () {
+                reminderRow2.classList.add("hidden");
+                document.getElementById("reminder-2").value = "none";
+                addBtn.disabled = false;
+                addBtn.style.display = "inline-block";
+            });
 
-      // Sync single-day checkbox
-      const startDate = document.getElementById("start_date");
-      const endDate = document.getElementById("end_date");
-      const singleDay = document.getElementById("singleDay");
+            // Duration change log
+            document.getElementById("duration").addEventListener("change", function () {
+                const value = this.value;
+                const [hour, minute] = value.split(":");
+                console.log(`Duration: ${hour} hours and ${minute} minutes`);
+            });
 
-      function syncDate() {
-        if (singleDay.checked) {
-          endDate.value = startDate.value;
-          endDate.disabled = true;
-        } else {
-          endDate.disabled = false;
-        }
-      }
 
-      syncDate();
-      singleDay.addEventListener("change", syncDate);
-      startDate.addEventListener("change", syncDate);
-    });
+        });
     </script>
 
 </body>
-
 </html>
