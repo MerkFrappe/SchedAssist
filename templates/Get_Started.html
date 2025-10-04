@@ -1,257 +1,288 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>SchedAssist</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>SchedAssist</title>
 
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;700&display=swap" rel="stylesheet">
 
-  <style>
-    :root{
-      --card-bg: #f0f0f0;
-      --accent: #6C63FF;
-      --muted: #BDBDBD;
-    }
-
-
-
-    *{box-sizing: border-box}
-    body{
-      font-family: 'Poppins', sans-serif;
-      background-color: beige;
-      margin: 0;
-      padding: 24px;
-      color: #222;
-    }
-
-
-     .hero {
-    
-      padding: 15px 10px;  
-      background: #2d3142;
-      color: white;
-      border-radius: 60px;
-      margin-bottom: 40px;
-
-    }
-
-     .hero .logo {
-      max-height: 300px;
-      margin: 0 auto 15px;
-      display: block;
-      width: auto;
-
-    }
-
-    .tagline {
-      font-size: 2.4rem;
-      font-weight: 700;
-      text-align: center;
-      color: black;
-      margin-top: 10px;
-    }
-
-    .card{
-      background-color: var(--card-bg);
-      align-items: center;            
-      justify-content: center;  
-      border-radius: 16px;
-      padding: 28px;
-      width: 100%;
-      max-width: 960px;
-      margin: auto;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.12);
-
-      position: relative;
-    }
-
-    /* HEADER */
-    .header{
-      display: flex;
-      align-items: center;
-       justify-content: center;
-      gap: 14px;
-      margin-bottom: 18px;
-    }
+    <style>
+        :root {
+            --card-bg: #f0f0f0;
+            --accent: #6C63FF;
+            --muted: #BDBDBD;
+        }
 
 
 
-    .brand-name{
-      font-weight: 700;
-      font-size: 1.4rem;
-      letter-spacing: .6px;
-    }
+        * {
+            box-sizing: border-box
+        }
 
-    /* CAROUSEL WRAPPER */
-    .carousel-wrap{
-      position: relative;
-    }
-
-    /* main.features becomes a horizontal scroll container */
-    .features{
-      display: flex;
-      gap: 20px;
-      overflow-x: auto;
-      scroll-snap-type: x mandatory;
-      -webkit-overflow-scrolling: touch;
-      padding: 12px 6px;
-      scroll-behavior: smooth;
-    }
-
-    /* hide scrollbar (desktop) while keeping accessibility */
-    .features::-webkit-scrollbar{ height: 8px; display: none; }
-    .features { scrollbar-width: none; -ms-overflow-style: none; }
-
-    .feature-item{
-      flex: 0 0 80%;             
-      max-width: 780px;
-      scroll-snap-align: center;
-      background: white;
-      border-radius: 12px;
-      padding: 20px;
-      box-shadow: 0 6px 16px rgba(0,0,0,0.08);
-      text-align: center;
-      min-height: 180px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-    }
-
-    /* SVG / images scale properly */
-    .illustration-container{
-      width: 100%;
-      max-width: 350px;
-      margin-bottom: 12px;
-    }
-    .illustration-container svg{
-      width: 100%;
-      height: auto;
-      display: block;
-    }
-
-    .feature-item p{
-      margin: 8px 0 0;
-      font-weight: 600;
-      color: #333;
-    }
-  
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: beige;
+            margin: 0;
+            padding: 24px;
+            color: #222;
+        }
 
 
-     
+        .hero {
 
-    /* CTA */
-    .cta-button{
-       display: flex;              
-  	align-items: center;            
-  	justify-content: center;       
-  	margin: 18px auto 0;           
-  	padding: 10px 18px;
-	font-size: 1.3rem; 
-  	background-color: black;
-  	color: white;
-  	border-radius: 10px;
-  	text-decoration: none;
- 	font-weight: 700;
-  	width: 500px;
-  	cursor: pointer;
-	max-width: 90%;
-  	cursor: pointer;
-  	transition: background 0.2s ease-in-out;
-    }
+            padding: 15px 10px;
+            background: #bfc0c0;
+            color: white;
+            border-radius: 20px;
+            margin: 40px auto;
+            width: 100%;
+            max-width: 800px;
 
-  .cta-button:hover {
-        background-color: #3b6666 !important;
-        border-color: #3b6666 !important;
-           }
-    @media (min-width: 900px){
-      .feature-item{ flex: 0 0 46%; } 
-    }
+        }
 
-    @media (min-width: 1200px){
-      .feature-item{ flex: 0 0 30%; } 
-      .features{ gap: 26px; padding: 20px 6px; }
-    }
-  </style>
+        .hero .logo {
+            max-height: 300px;
+            margin: 0 auto 15px;
+            display: block;
+            width: auto;
+
+        }
+
+        .tagline {
+            font-size: 2.4rem;
+            font-weight: 700;
+            text-align: center;
+            color: black;
+            margin-top: 10px;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            align-items: center;
+            justify-content: center;
+            border-radius: 16px;
+            padding: 28px;
+            width: 100%;
+            max-width: 960px;
+            margin: auto;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+
+            position: relative;
+        }
+
+        /* HEADER */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 14px;
+            margin-bottom: 18px;
+        }
+
+
+
+        .brand-name {
+            font-weight: 700;
+            font-size: 1.4rem;
+            letter-spacing: .6px;
+        }
+
+        /* CAROUSEL WRAPPER */
+        .carousel-wrap {
+            position: relative;
+        }
+
+        /* main.features becomes a horizontal scroll container */
+        .features {
+            display: flex;
+            gap: 20px;
+            overflow-x: auto;
+            scroll-snap-type: x mandatory;
+            -webkit-overflow-scrolling: touch;
+            padding: 12px 6px;
+            scroll-behavior: smooth;
+        }
+
+        /* hide scrollbar (desktop) while keeping accessibility */
+        .features::-webkit-scrollbar {
+            height: 8px;
+            display: none;
+        }
+
+        .features {
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+
+        .feature-item {
+            flex: 0 0 80%;
+            max-width: 780px;
+            scroll-snap-align: center;
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+            text-align: center;
+            min-height: 180px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* SVG / images scale properly */
+        .illustration-container {
+            width: 100%;
+            max-width: 350px;
+            margin-bottom: 12px;
+        }
+
+        .illustration-container svg {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .feature-item p {
+            margin: 8px 0 0;
+            font-weight: 600;
+            color: #333;
+        }
+
+
+
+
+
+        /* CTA */
+        .cta-button {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 18px auto 0;
+            padding: 10px 18px;
+            font-size: 1.3rem;
+            background-color: black;
+            color: white;
+            border-radius: 10px;
+            text-decoration: none;
+            font-weight: 700;
+            width: 500px;
+            cursor: pointer;
+            max-width: 90%;
+            cursor: pointer;
+            transition: background 0.2s ease-in-out;
+        }
+
+        .cta-button:hover {
+            background-color: #3b6666 !important;
+            border-color: #3b6666 !important;
+        }
+
+        @media (min-width: 900px) {
+            .feature-item {
+                flex: 0 0 46%;
+            }
+        }
+
+        @media (min-width: 1200px) {
+            .feature-item {
+                flex: 0 0 30%;
+            }
+
+            .features {
+                gap: 26px;
+                padding: 20px 6px;
+            }
+        }
+    </style>
 </head>
+
 <body>
 
- <section class="hero">
-    <header class="header">
-      <img src="{{ url_for('static', filename='icon/sCHED.png') }}"
+    <section class="hero">
+        <header class="header">
+            <img src="{{ url_for('static', filename='icon/sCHED.png') }}"
      alt="SchedAssist logo" class="logo">
-</header>
-  </section>
+        </header>
+    </section>
 
 
-  <div class="card">
+    <div class="card">
 
-	<h2 class="tagline">Your productivity companion starts here.</h2>
-     
-    
-      <main class="features" id="features">
+        <h2 class="tagline">Your productivity companion starts here.</h2>
 
-    
-        <article class="feature-item" role="group" aria-roledescription="slide" aria-label="Add Tasks Effortlessly">
-          <div class="illustration-container">
-            <!-- SVG 1 -->
-            <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
-              <rect x="20" y="25" width="60" height="50" rx="5" fill="white" stroke="#E0E0E0" stroke-width="2"/>
-              <rect x="30" y="35" width="25" height="5" rx="2.5" fill="#6C63FF"/>
-              <rect x="30" y="45" width="40" height="2" rx="1" fill="#BDBDBD"/>
-              <rect x="30" y="52" width="40" height="2" rx="1" fill="#BDBDBD"/>
-              <circle cx="70" cy="65" r="10" fill="#6C63FF"/>
-              <path d="M70 60V70M65 65H75" stroke="white" stroke-width="2" stroke-linecap="round"/>
-            </svg>
-          </div>
-          <p>Add Tasks Effortlessly</p>
-        </article>
 
-        <article class="feature-item" role="group" aria-roledescription="slide" aria-label="Take Control of your Days">
-          <div class="illustration-container">
-            <!-- SVG 2 -->
-            <svg viewBox="0 0 150 150" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
-              <circle cx="75" cy="80" r="45" fill="#6C63FF" stroke="#3F3D56" stroke-width="4"/>
-              <path d="M75 55V80L95 90" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M55 40L65 30" stroke="#3F3D56" stroke-width="4" stroke-linecap="round"/>
-              <path d="M95 40L85 30" stroke="#3F3D56" stroke-width="4" stroke-linecap="round"/>
-              <rect x="60" y="105" width="10" height="20" fill="#3F3D56"/>
-              <ellipse cx="65" cy="125" rx="8" ry="3" fill="#3F3D56"/>
-              <rect x="80" y="105" width="10" height="20" fill="#3F3D56"/>
-              <ellipse cx="85" cy="125" rx="8" ry="3" fill="#3F3D56"/>
-              <path d="M85 95C85 92.2386 82.7614 90 80 90H70C67.2386 90 65 92.2386 65 95V105H85V95Z" fill="#3F3D56"/>
-              <circle cx="75" cy="85" r="5" fill="#3F3D56"/>
-            </svg>
-          </div>
-          <p>Take Control of your Days</p>
-        </article>
+        <main class="features" id="features">
 
-        <article class="feature-item" role="group" aria-roledescription="slide" aria-label="Optimize your Schedule">
-          <div class="illustration-container">
-            <!-- SVG 3 -->
-            <svg viewBox="0 0 150 150" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
-              <rect x="60" y="70" width="10" height="20" fill="#3F3D56"/>
-              <ellipse cx="65" cy="90" rx="8" ry="3" fill="#3F3D56"/>
-              <path d="M75 60C75 57.2386 72.7614 55 70 55H60C57.2386 55 55 57.2386 55 60V70H75V60Z" fill="#3F3D56"/>
-              <circle cx="65" cy="50" r="5" fill="#3F3D56"/>
-              <rect x="20" y="40" width="110" height="60" rx="4" fill="white" stroke="#BDBDBD" stroke-width="2"/>
-              <rect x="30" y="50" width="20" height="10" rx="2" fill="#6C63FF"/>
-              <rect x="30" y="65" width="20" height="10" rx="2" fill="#EF5350"/>
-              <rect x="65" y="50" width="20" height="10" rx="2" fill="#6C63FF"/>
-              <rect x="100" y="50" width="20" height="10" rx="2" fill="#EF5350"/>
-              <rect x="100" y="65" width="20" height="10" rx="2" fill="#6C63FF"/>
-              <line x1="57" y1="40" x2="57" y2="100" stroke="#E0E0E0" stroke-width="2"/>
-              <line x1="93" y1="40" x2="93" y2="100" stroke="#E0E0E0" stroke-width="2"/>
-            </svg>
-          </div>
-          <p>Optimize your Schedule</p>
-        </article>
-	 </div>
-      </main>
 
-     <a href="{{ url_for('schedule') }}" class="cta-button">Get Started</a>
-	</div>
+            <article class="feature-item" role="group" aria-roledescription="slide" aria-label="Add Tasks Effortlessly">
+                <div class="illustration-container">
+                    <!-- SVG 1 -->
+                    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+                        <rect x="20" y="25" width="60" height="50" rx="5" fill="white" stroke="#E0E0E0"
+                            stroke-width="2" />
+                        <rect x="30" y="35" width="25" height="5" rx="2.5" fill="#6C63FF" />
+                        <rect x="30" y="45" width="40" height="2" rx="1" fill="#BDBDBD" />
+                        <rect x="30" y="52" width="40" height="2" rx="1" fill="#BDBDBD" />
+                        <circle cx="70" cy="65" r="10" fill="#6C63FF" />
+                        <path d="M70 60V70M65 65H75" stroke="white" stroke-width="2" stroke-linecap="round" />
+                    </svg>
+                </div>
+                <p>Add Tasks Effortlessly</p>
+            </article>
+
+            <article class="feature-item" role="group" aria-roledescription="slide"
+                aria-label="Take Control of your Days">
+                <div class="illustration-container">
+                    <!-- SVG 2 -->
+                    <svg viewBox="0 0 150 150" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+                        <circle cx="75" cy="80" r="45" fill="#6C63FF" stroke="#3F3D56" stroke-width="4" />
+                        <path d="M75 55V80L95 90" stroke="white" stroke-width="4" stroke-linecap="round"
+                            stroke-linejoin="round" />
+                        <path d="M55 40L65 30" stroke="#3F3D56" stroke-width="4" stroke-linecap="round" />
+                        <path d="M95 40L85 30" stroke="#3F3D56" stroke-width="4" stroke-linecap="round" />
+                        <rect x="60" y="105" width="10" height="20" fill="#3F3D56" />
+                        <ellipse cx="65" cy="125" rx="8" ry="3" fill="#3F3D56" />
+                        <rect x="80" y="105" width="10" height="20" fill="#3F3D56" />
+                        <ellipse cx="85" cy="125" rx="8" ry="3" fill="#3F3D56" />
+                        <path d="M85 95C85 92.2386 82.7614 90 80 90H70C67.2386 90 65 92.2386 65 95V105H85V95Z"
+                            fill="#3F3D56" />
+                        <circle cx="75" cy="85" r="5" fill="#3F3D56" />
+                    </svg>
+                </div>
+                <p>Take Control of your Days</p>
+            </article>
+
+            <article class="feature-item" role="group" aria-roledescription="slide" aria-label="Optimize your Schedule">
+                <div class="illustration-container">
+                    <!-- SVG 3 -->
+                    <svg viewBox="0 0 150 150" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+                        <rect x="60" y="70" width="10" height="20" fill="#3F3D56" />
+                        <ellipse cx="65" cy="90" rx="8" ry="3" fill="#3F3D56" />
+                        <path d="M75 60C75 57.2386 72.7614 55 70 55H60C57.2386 55 55 57.2386 55 60V70H75V60Z"
+                            fill="#3F3D56" />
+                        <circle cx="65" cy="50" r="5" fill="#3F3D56" />
+                        <rect x="20" y="40" width="110" height="60" rx="4" fill="white" stroke="#BDBDBD"
+                            stroke-width="2" />
+                        <rect x="30" y="50" width="20" height="10" rx="2" fill="#6C63FF" />
+                        <rect x="30" y="65" width="20" height="10" rx="2" fill="#EF5350" />
+                        <rect x="65" y="50" width="20" height="10" rx="2" fill="#6C63FF" />
+                        <rect x="100" y="50" width="20" height="10" rx="2" fill="#EF5350" />
+                        <rect x="100" y="65" width="20" height="10" rx="2" fill="#6C63FF" />
+                        <line x1="57" y1="40" x2="57" y2="100" stroke="#E0E0E0" stroke-width="2" />
+                        <line x1="93" y1="40" x2="93" y2="100" stroke="#E0E0E0" stroke-width="2" />
+                    </svg>
+                </div>
+                <p>Optimize your Schedule</p>
+            </article>
+    </div>
+    </main>
+
+    <a href="{{ url_for('schedule') }}" class="cta-button">Get Started</a>
+    </div>
+
 </html>
