@@ -29,28 +29,40 @@ def init_db():
         with app.app_context():
             db = get_db()
             db.execute("""
-                       CREATE TABLE IF NOT EXISTS tasks (
-                            id INTEGER PRIMARY KEY AUTOINCREMENT,
-                            title TEXT NOT NULL,
-                            deadline TEXT NOT NULL,
-                            duration INTEGER,
-                            is_flexible INTEGER,
-                            reminders TEXT,
-                            category TEXT,
-                            score REAL,
-                            isCompleted INTEGER DEFAULT 0,
-                       
-                            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                       )
-                       """)
+                CREATE TABLE IF NOT EXISTS tasks (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    title TEXT NOT NULL,
+                    deadline TEXT NOT NULL,
+                    duration INTEGER,
+                    is_flexible INTEGER,
+                    reminders TEXT,
+                    category TEXT,
+                    score REAL,
+                    isCompleted INTEGER DEFAULT 0,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
             db.execute("""
                 CREATE TABLE IF NOT EXISTS app_state (
                     id TEXT PRIMARY KEY,
                     value TEXT
-                       )
+                )
             """)
             db.commit()
-            print(" Database initialized: tasks.db")
+            print("✅ Database initialized: tasks.db")
+    
+    # Also ensure app_state table exists even if database exists
+    else:
+        with app.app_context():
+            db = get_db()
+            db.execute("""
+                CREATE TABLE IF NOT EXISTS app_state (
+                    id TEXT PRIMARY KEY,
+                    value TEXT
+                )
+            """)
+            db.commit()
+            print("✅ Ensured app_state table exists")
     
 def get_optimization_state():
     """Check if optimization has been applied"""
@@ -359,10 +371,15 @@ def optimize_tasks():
                     break
             
             if can_place:
-                for h in range(start_slot, start_slot + duration_hours):
-                    week_schedule[day][h] = task
-                print(f"✅ Placed '{task['title']}' on {day} at {start_hour}:00")
-                return True
+                 # Update the actual deadline, not just display times
+                    original_deadline = datetime.strptime(task['deadline'], "%Y-%m-%d %H:%M")
+                    new_deadline = original_deadline.replace(
+                    hour=task['start_hour_int'] + duration_hours,
+                    minute=0
+                )
+                    task['deadline'] = new_deadline.strftime("%Y-%m-%d %H:%M")
+                    print(f"✅ Placed '{task['title']}' on {day} at {start_hour}:00")
+                    return True
             else:
                 print(f"❌ Could not place '{task['title']}' on {day} at {start_hour}:00 - slot occupied")
                 return False
@@ -410,7 +427,9 @@ def optimize_tasks():
             return False
 
     def move_to_tomorrow(task):
-        """Move task to the next day at a default morning time"""
+        current_deadline = datetime.strptime(task['deadline'], "%Y-%m-%d %H:%M")
+    # Move to next day
+        next_day_date = current_deadline + timedelta(days=1)
         try:
             days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
             current_day_index = days.index(task['weekday'])
@@ -424,7 +443,7 @@ def optimize_tasks():
             task['start_hour_str'] = "09:00"
             task['end_hour_str'] = "10:00"
             task['colspan'] = 1
-            
+            task['deadline'] = next_day_date.replace(hour=10, minute=0).strftime("%Y-%m-%d %H:%M")
             print(f"📅 Moved '{task['title']}' to {next_day} at 9:00 AM")
             
         except Exception as e:
@@ -457,11 +476,11 @@ def optimize_tasks():
                 if hour_slot is not None:
                     task = hour_slot
                     # Calculate new deadline based on day and end hour
-                    day_date = days_dates[day]
-                    new_deadline = day_date.replace(
+                    original_deadline = datetime.strptime(task['deadline'], "%Y-%m-%d %H:%M")
+                    new_deadline = original_deadlin.replace(
                         hour=task['end_hour_int'], 
-                        minute=0, 
-                        second=0
+                        minute=0
+                        
                     )
                     
                     # Update the task in database

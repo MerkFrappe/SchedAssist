@@ -95,25 +95,10 @@
             padding: 20px;
         }
 
-        .table-responsive {
-            max-height: 700px;
-            overflow-y: auto;
-        }
-
-        .table-scroll-container {
-            max-height: 600px;
-            overflow: auto;
-        }
-
-        .table {
-            margin-bottom: 0;
-        }
-
         /* Task block styles */
-
         .windows-grid {
             display: grid;
-            grid-template-columns: repeat(2, 180px); /* uniform box width */
+            grid-template-columns: repeat(2, 180px);
             gap: 15px;
             justify-content: center;
             align-items: center;
@@ -133,6 +118,53 @@
             display: flex;
             flex-direction: column;
             justify-content: center;
+        }
+
+        .schedule-grid {
+            display: grid;
+            grid-template-columns: 80px repeat(7, 1fr);
+            grid-template-rows: 50px repeat(32, 30px);
+            gap: 1px;
+            background-color: #ddd;
+            border: 1px solid #ddd;
+            max-height: 700px;
+            overflow-y: auto;
+        }
+
+        .time-column {
+            grid-column: 1;
+            position: sticky;
+            left: 0;
+            background: white;
+            z-index: 10;
+        }
+
+        .day-column {
+            display: contents;
+        }
+
+        .day-label {
+            grid-row: 1;
+            background: #343a40;
+            color: white;
+            padding: 10px;
+            text-align: center;
+            font-weight: bold;
+            position: sticky;
+            top: 0;
+            z-index: 5;
+        }
+
+        .time-label {
+            padding: 5px;
+            text-align: center;
+            background: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+            font-size: 0.8em;
+        }
+
+        .time-label:nth-child(odd) {
+            background: #e9ecef;
         }
 
         .task-block.selected {
@@ -183,13 +215,13 @@
 
         .windows-grid {
             display: grid;
-            grid-template-columns: repeat(2, 1fr); /* 2 columns */
+            grid-template-columns: repeat(2, 1fr);
             gap: 15px;
-            justify-content: center;  /* centers the grid items horizontally */
-            align-items: center;      /* centers them vertically */
+            justify-content: center;
+            align-items: center;
             text-align: center;
-            max-width: 400px;         /* optional: control total width */
-            margin: 0 auto;           /* centers the grid in its parent container */
+            max-width: 400px;
+            margin: 0 auto;
             padding: 10px;
         }
 
@@ -215,22 +247,46 @@
             font-weight: bold;
         }
 
+        .urgent-task {
+            border: 2px solid #dc3545 !important;
+            box-shadow: 0 0 8px rgba(220, 53, 69, 0.5) !important;
+        }
+
+        .overdue-task {
+            border: 3px solid #dc3545 !important;
+            background: repeating-linear-gradient(
+                45deg,
+                transparent,
+                transparent 10px,
+                rgba(220, 53, 69, 0.1) 10px,
+                rgba(220, 53, 69, 0.1) 20px
+            ) !important;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
         @keyframes fadeInOut {
             0% {
                 opacity: 0;
                 transform: translateY(-10px);
             }
-
             10%,
             90% {
                 opacity: 1;
                 transform: translateY(0);
             }
-
             100% {
                 opacity: 0;
                 transform: translateY(-10px);
             }
+        }
+
+        .pulsing {
+            animation: pulse 1s infinite;
         }
     </style>
 </head>
@@ -238,21 +294,21 @@
 <body class="bg-beige">
     <div class="d-flex">
         <!-- Sidebar -->
-         <aside class="sidebar bg-dark text-white p-3">
-        <div class="sidebar-header text-center mb-4">
-             <img src="{{ url_for('static', filename='icon/Icon.png') }}" alt="SchedAssist logo" class="logo">
-            <h2 class="h5">SchedAssistant</h2>
-        </div>
-        <ul class="list-unstyled sidebar-links">
-            <h6 class="text-uppercase">Main Menu</h6>
-            <li class="mb-2"><a href="{{ url_for('dashboard') }}" class="text-white text-decoration-none"><span
-                        class="material-symbols-outlined">dashboard</span>Dashboard</a></li>
-            <li class="mb-2"><a href="{{ url_for('schedule') }}" class="text-white text-decoration-none"><span
-                        class="material-symbols-outlined">calendar_month</span>Schedule</a></li>
-            <li class="mb-2"><a href="{{ url_for('analytics') }}" class="text-white text-decoration-none"><span
-                        class="material-symbols-outlined">monitoring</span>Analytics</a></li>
-        </ul>
-    </aside>
+        <aside class="sidebar bg-dark text-white p-3">
+            <div class="sidebar-header text-center mb-4">
+                <img src="{{ url_for('static', filename='icon/Icon.png') }}" alt="SchedAssist logo" class="logo">
+                <h2 class="h5">SchedAssistant</h2>
+            </div>
+            <ul class="list-unstyled sidebar-links">
+                <h6 class="text-uppercase">Main Menu</h6>
+                <li class="mb-2"><a href="{{ url_for('dashboard') }}" class="text-white text-decoration-none"><span
+                            class="material-symbols-outlined">dashboard</span>Dashboard</a></li>
+                <li class="mb-2"><a href="{{ url_for('schedule') }}" class="text-white text-decoration-none"><span
+                            class="material-symbols-outlined">calendar_month</span>Schedule</a></li>
+                <li class="mb-2"><a href="{{ url_for('analytics') }}" class="text-white text-decoration-none"><span
+                            class="material-symbols-outlined">monitoring</span>Analytics</a></li>
+            </ul>
+        </aside>
 
         <!-- Main Content -->
         <main class="flex-grow-1 p-5 text-dark">
@@ -264,22 +320,20 @@
                 <aside class="bg-beige text-dark p-4" style="min-width: 300px;">
                     <h3 class="mt-3">You have...</h3>
                     <hr class="bg-secondary">
-                    <div class="windows-grid text-center mb-3">
-
                     <div class="d-flex justify-content-center align-items-center">
-                   <div class="windows-grid text-center">
-                   <div class="task-block score-critical text-white p-4">
-                    {{ urgent_count }} Urgent Task{{ 's' if urgent_count != 1 }}
-                       </div>
-                   <div class="task-block score-high text-white p-4">
-                    {{ important_count }} Important Task{{ 's' if important_count != 1 }}
-                         </div>
-                      <div class="task-block score-medium p-4">
-                       {{ normal_count }} Normal Task{{ 's' if normal_count != 1 }}
-                         </div>
-                     <div class="task-block score-low text-white p-4">
-                      {{ unessential_count }} Unessential Task{{ 's' if unessential_count != 1 }}
-                             </div>
+                        <div class="windows-grid text-center">
+                            <div class="task-block score-critical text-white p-4">
+                                {{ urgent_count }} Urgent Task{{ 's' if urgent_count != 1 }}
+                            </div>
+                            <div class="task-block score-high text-white p-4">
+                                {{ important_count }} Important Task{{ 's' if important_count != 1 }}
+                            </div>
+                            <div class="task-block score-medium p-4">
+                                {{ normal_count }} Normal Task{{ 's' if normal_count != 1 }}
+                            </div>
+                            <div class="task-block score-low text-white p-4">
+                                {{ unessential_count }} Unessential Task{{ 's' if unessential_count != 1 }}
+                            </div>
                         </div>
                     </div>
 
@@ -296,59 +350,56 @@
                     </div>
                 </aside>
 
-                <!-- Task Table -->
-                <div class="flex-grow-1 ps-4">
-                    <div class="table-scroll-container table-responsive">
-                        <table class="table table-bordered table-hover align-middle text-center">
-                            <thead class="table-dark">
-                                <tr>
-                                    <th>Time</th>
-                                    <th>Monday</th>
-                                    <th>Tuesday</th>
-                                    <th>Wednesday</th>
-                                    <th>Thursday</th>
-                                    <th>Friday</th>
-                                    <th>Saturday</th>
-                                    <th>Sunday</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for hour in range(6, 22) %}
-                                <tr>
-                                    <td>{{ "%02d:00"|format(hour) }}</td>
-                                    {% for day in ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'] %}
-                                    <td>
-                                        {% for task in tasks %}
-                                        {% if task.weekday == day and hour >= task.start_hour_int and hour < task.end_hour_int %}
-                                        {% set score_class_modifier = "" %}
-                                        {% if task.score >= 70 %}
-                                        {% set score_class_modifier = "score-critical" %}
-                                        {% elif task.score >= 40 %}
-                                        {% set score_class_modifier = "score-high" %}
-                                        {% elif task.score >= 10 %}
-                                        {% set score_class_modifier = "score-medium" %}
-                                        {% else %}
-                                        {% set score_class_modifier = "score-low" %}
-                                        {% endif %}
-                                        <div class="task-block {{ task.category }} {{ score_class_modifier }}"
-                                            data-task-id="{{ task.id }}"
-                                            data-title="{{ task.title }}"
-                                            data-deadline="{{ task.deadline }}"
-                                            data-reminders='{{ task.reminders or [] | tojson | safe }}'
-                                            data-score="{{ task.score }}">
-                                            <strong>{{ task.title }}</strong><br>
-                                            <small>{{ task.start_hour_str }} - {{ task.end_hour_str }}</small><br>
-                                            <small>Score: {{ task.score }}</small>
-                                        </div>
-                                        {% endif %}
-                                        {% endfor %}
-                                    </td>
-                                    {% endfor %}
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
+                <!-- Schedule Grid -->
+          <div class="schedule-grid">
+    <!-- Time Column -->
+    <div class="time-column">
+        <div class="day-label">Time</div>
+        {% for hour in range(6, 22) %}
+        <div class="time-label" style="grid-row: {{ ((hour-6)*2) + 2 }}">{{ "%02d:00"|format(hour) }}</div>
+        <div class="time-label" style="grid-row: {{ ((hour-6)*2) + 3 }}">{{ "%02d:30"|format(hour) }}</div>
+        {% endfor %}
+    </div>
+
+    <!-- Day Columns -->
+    {% set day_columns = {'Monday': 2, 'Tuesday': 3, 'Wednesday': 4, 'Thursday': 5, 'Friday': 6, 'Saturday': 7, 'Sunday': 8} %}
+    
+    {% for day in ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'] %}
+    <div class="day-column" data-day="{{ day }}">
+        <div class="day-label">{{ day }}</div>
+        
+        <!-- Grid cells for this day -->
+        {% for hour in range(6, 22) %}
+            {% for half_hour in [0, 30] %}
+            <div class="grid-cell" style="grid-column: {{ day_columns[day] }}; grid-row: {{ ((hour-6)*2) + (2 if half_hour == 0 else 3) }}"></div>
+            {% endfor %}
+        {% endfor %}
+        
+        <!-- Tasks for this day -->
+        {% for task in tasks %}
+            {% if task.weekday == day %}
+                {% set start_minutes = (task.start_hour_int - 6) * 60 + task.start_hour_str.split(':')[1] | int %}
+                {% set end_minutes = (task.end_hour_int - 6) * 60 + task.end_hour_str.split(':')[1] | int %}
+                {% set duration_minutes = end_minutes - start_minutes %}
+                
+                <div class="task-block {{ task.category }} 
+                              {% if task.score >= 70 %}score-critical
+                              {% elif task.score >= 40 %}score-high
+                              {% elif task.score >= 10 %}score-medium
+                              {% else %}score-low{% endif %}"
+                              style="grid-column: {{ day_columns[day] }}; grid-row: {{ (start_minutes // 30) + 2 }} / span {{ (duration_minutes + 29) // 30 }};"
+                              data-task-id="{{ task.id }}"
+                              data-title="{{ task.title }}"
+                              data-deadline="{{ task.deadline }}"
+                              data-reminders='{{ task.reminders or [] | tojson | safe }}'
+                              data-score="{{ task.score }}">
+                              <strong>{{ task.title }}</strong><br>
+                              <small>{{ task.start_hour_str }} - {{ task.end_hour_str }}</small>
+                              </div>
+                              {% endif %}
+                           {% endfor %}
+                      </div>
+                     {% endfor %}
                 </div>
             </div>
         </main>
@@ -409,8 +460,8 @@
             }
         }
 
-        // ✅ PRESERVED from Main.html (robust task click handler)
-        document.querySelector('.table-scroll-container').addEventListener('click', function (event) {
+        // Fixed task click handler - attach to schedule grid instead of non-existent container
+        document.querySelector('.schedule-grid').addEventListener('click', function (event) {
             let targetBlock = event.target.closest('.task-block');
             if (targetBlock) {
                 const taskId = targetBlock.dataset.taskId;
@@ -427,38 +478,60 @@
             }
         });
 
-        // 🔔 Reminder system
         document.addEventListener('DOMContentLoaded', () => {
             const tasks = document.querySelectorAll('.task-block');
-            const now = Date.now();
+            const now = new Date();
+            
             tasks.forEach(task => {
                 const title = task.dataset.title;
-                const deadline = new Date(task.dataset.deadline).getTime();
+                const deadline = new Date(task.dataset.deadline);
                 const reminders = JSON.parse(task.dataset.reminders || '[]');
-                reminders.forEach(rem => {
-                    const delay = new Date(rem).getTime() - now;
-                    if (delay > 0) {
+                
+                reminders.forEach(reminder => {
+                    let reminderTime = new Date(deadline);
+                    
+                    if (reminder === "5m") reminderTime.setMinutes(deadline.getMinutes() - 5);
+                    else if (reminder === "10m") reminderTime.setMinutes(deadline.getMinutes() - 10);
+                    else if (reminder === "15m") reminderTime.setMinutes(deadline.getMinutes() - 15);
+                    else if (reminder === "30m") reminderTime.setMinutes(deadline.getMinutes() - 30);
+                    else if (reminder === "1h") reminderTime.setHours(deadline.getHours() - 1);
+                    else if (reminder === "3h") reminderTime.setHours(deadline.getHours() - 3);
+                    else if (reminder === "1d") reminderTime.setDate(deadline.getDate() - 1);
+                    
+                    const delay = reminderTime.getTime() - now.getTime();
+                    
+                    if (delay > 0 && delay < 24 * 60 * 60 * 1000) {
                         setTimeout(() => {
                             showAlert(`⏰ Reminder: ${title} is due soon!`);
-                            task.classList.add('score-high');
+                            task.classList.add('pulsing');
                         }, delay);
                     }
                 });
             });
 
-            // ⏳ Deadline-based color updates
-            setInterval(() => {
-                const current = Date.now();
+            function updateTaskUrgency() {
+                const current = new Date();
                 tasks.forEach(task => {
-                    const deadline = new Date(task.dataset.deadline).getTime();
+                    const deadline = new Date(task.dataset.deadline);
                     const remaining = deadline - current;
-                    task.classList.remove('score-low', 'score-medium', 'score-high', 'score-critical');
-                    if (remaining < 0 || remaining < 30 * 60 * 1000) task.classList.add('score-critical');
-                    else if (remaining < 2 * 60 * 60 * 1000) task.classList.add('score-medium');
-                    else if (remaining < 6 * 60 * 60 * 1000) task.classList.add('score-high');
-                    else task.classList.add('score-low');
+                    const originalScore = parseFloat(task.dataset.score);
+                    
+                    if (remaining < 0) {
+                        task.classList.remove('score-low', 'score-medium', 'score-high', 'score-critical');
+                        task.classList.add('score-critical');
+                        task.style.border = '2px solid #dc3545';
+                    } else if (remaining < 30 * 60 * 1000) {
+                        task.classList.add('urgent-task');
+                    } else if (remaining < 2 * 60 * 60 * 1000) {
+                        task.style.border = '1px solid #fd7e14';
+                    } else {
+                        task.classList.remove('urgent-task', 'overdue-task');
+                    }
                 });
-            }, 60000);
+            }
+
+            updateTaskUrgency();
+            setInterval(updateTaskUrgency, 60000);
         });
 
         // Action buttons
@@ -495,5 +568,4 @@
         updateActionButtons();
     </script>
 </body>
-
 </html>
