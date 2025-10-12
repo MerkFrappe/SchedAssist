@@ -1,3 +1,4 @@
+
 from flask import Flask, render_template, request, redirect, url_for, g
 from datetime import datetime, timedelta
 import sqlite3
@@ -38,13 +39,33 @@ def init_db():
                             category TEXT,
                             score REAL,
                             isCompleted INTEGER DEFAULT 0,
+                       
                             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                        )
                        """)
+            db.execute("""
+                CREATE TABLE IF NOT EXISTS app_state (
+                    id TEXT PRIMARY KEY,
+                    value TEXT
+                       )
+            """)
             db.commit()
             print(" Database initialized: tasks.db")
     
+def get_optimization_state():
+    """Check if optimization has been applied"""
+    conn = get_db()
+    state = conn.execute("SELECT value FROM app_state WHERE id = 'optimized'").fetchone()
+    return state and state['value'] == 'true'
 
+def set_optimization_state(optimized):
+    """Set optimization state"""
+    conn = get_db()
+    conn.execute("""
+        INSERT OR REPLACE INTO app_state (id, value) 
+        VALUES ('optimized', ?)
+    """, ('true' if optimized else 'false',))
+    conn.commit()
 # -------------------------
 # Routes
 # -------------------------
@@ -99,15 +120,37 @@ def schedule():
             task['start_hour_str'] = start_dt.strftime('%H:%M')
             task['end_hour_str'] = deadline_dt.strftime('%H:%M')
 
+
+
             tasks_for_calendar.append(task)
+
+
+
         except Exception as e:
             print(f"Error parsing deadline for task {task.get('id', 'N/A')}: {task['deadline']} → {e}")
-        
+    
+    urgent_count = len([t for t in tasks_for_calendar if t['score'] >= 70])
+    important_count = len([t for t in tasks_for_calendar if t['score'] >= 40 and t['score'] < 70])
+    normal_count = len([t for t in tasks_for_calendar if t['score'] >= 10 and t['score'] < 40])
+    unessential_count = len([t for t in tasks_for_calendar if t['score'] < 10])        
+    
+    
     formatted_date = now.strftime("%B %d, %Y")
     # Calculate week number (simple approach, adjust if you need ISO week numbers)
     week_number = now.isocalendar()[1] 
 
-    return render_template("Main.html", tasks=tasks_for_calendar, formatted_date=formatted_date, week_number=week_number)
+    optimized = get_optimization_state()
+
+    
+    return render_template("Main.html",
+    formatted_date=formatted_date,
+    week_number=week_number, 
+    optimized=optimized,     
+    tasks=tasks_for_calendar,
+    urgent_count=urgent_count,
+    important_count=important_count,
+    normal_count=normal_count,
+    unessential_count=unessential_count,)
 
 
 @app.route("/Analytics")
@@ -238,56 +281,231 @@ def submit():
 def optimize_tasks():
     conn = get_db()
     tasks_raw = conn.execute("""
-        SELECT title, category, deadline, duration, score, reminders
+        SELECT id, title, category, deadline, duration, score, reminders, is_flexible
         FROM tasks
+        WHERE isCompleted = 0
         ORDER BY score DESC
     """).fetchall()
-    conn.close()
 
-    tasks_for_calendar = []  # Define it here first!
-
+    # Convert to dict and parse datetime
+    tasks = []
     for row in tasks_raw:
         task = dict(row)
         try:
-            # Safely handle missing reminders
-            if "reminders" not in task or task["reminders"] in (None, "", "null"):
-                task["reminders"] = []
-            else:
-                # Convert comma-separated string to list
-                task["reminders"] = [r.strip() for r in task["reminders"].split(",") if r.strip()]
-
-            # Parse datetime
             deadline_dt = datetime.strptime(task["deadline"], "%Y-%m-%d %H:%M")
             duration_td = timedelta(minutes=int(task.get("duration", 60)))
             start_dt = deadline_dt - duration_td
 
-            # Compute display attributes
             task["weekday"] = start_dt.strftime("%A")
             task["start_hour_int"] = start_dt.hour
             task["end_hour_int"] = deadline_dt.hour
-            task["start_hour_str"] = start_dt.strftime("%H:%M")
-            task["end_hour_str"] = deadline_dt.strftime("%H:%M")
-
-            tasks_for_calendar.append(task)
-
+            task["start_hour_str"] = start_dt.strftime('%H:%M')
+            task["end_hour_str"] = deadline_dt.strftime('%H:%M')
+            task['colspan'] = max(1, task['end_hour_int'] - task['start_hour_int'])
+            
+            # Parse reminders
+            if task.get("reminders") and task["reminders"] not in (None, "", "null"):
+                task["reminders"] = [r.strip() for r in task["reminders"].split(",") if r.strip()]
+            else:
+                task["reminders"] = []
+                
+            tasks.append(task)
         except Exception as e:
-            print(f"⚠️ Error parsing deadline for {task.get('title', 'N/A')}: {e}")
+            print(f"⚠️ Error parsing task {task.get('title', 'N/A')}: {e}")
+
+    # ==================== RESCHEDULE FUNCTIONS ====================
+    def reschedule_flexible_tasks(tasks):
+        """Reschedule flexible tasks with low scores to empty time slots"""
+        # Initialize week schedule (6 AM to 10 PM, 16 hours)
+        week_schedule = {
+            day: [None] * 16 for day in [
+                "Monday", "Tuesday", "Wednesday", "Thursday", 
+                "Friday", "Saturday", "Sunday"
+            ]
+        }
+        
+        # First, place all non-flexible and high-priority tasks
+        for task in tasks:
+            if task.get('is_flexible', 0) == 0 or task.get('score', 0) >= 50:
+                place_task_in_schedule(week_schedule, task)
+        
+        # Then, reschedule flexible low-priority tasks
+        flexible_tasks = [t for t in tasks if t.get('is_flexible', 0) == 1 and t.get('score', 0) < 50]
+        print(f"🔄 Found {len(flexible_tasks)} flexible low-priority tasks to reschedule")
+        
+        for task in flexible_tasks:
+            if not reschedule_to_empty_slot(week_schedule, task):
+                # If no empty slot today, move to tomorrow
+                move_to_tomorrow(task)
+                # Try to place it in the new day
+                place_task_in_schedule(week_schedule, task)
+        
+        return week_schedule
+
+    def place_task_in_schedule(week_schedule, task):
+        """Place a task in its time slot if available"""
+        try:
+            day = task['weekday']
+            start_hour = task['start_hour_int']
+            duration_hours = max(1, (task['end_hour_int'] - task['start_hour_int']))
+            
+            # Check if slot is available
+            can_place = True
+            start_slot = start_hour - 6
+            
+            for h in range(start_slot, start_slot + duration_hours):
+                if h < 0 or h >= 16 or week_schedule[day][h] is not None:
+                    can_place = False
+                    break
+            
+            if can_place:
+                for h in range(start_slot, start_slot + duration_hours):
+                    week_schedule[day][h] = task
+                print(f"✅ Placed '{task['title']}' on {day} at {start_hour}:00")
+                return True
+            else:
+                print(f"❌ Could not place '{task['title']}' on {day} at {start_hour}:00 - slot occupied")
+                return False
+            
+        except Exception as e:
+            print(f"Error placing task {task.get('title', 'Unknown')}: {e}")
+            return False
+
+    def reschedule_to_empty_slot(week_schedule, task):
+        """Try to reschedule task to an empty slot in the same day"""
+        try:
+            original_day = task['weekday']
+            duration_hours = max(1, (task['end_hour_int'] - task['start_hour_int']))
+            
+            # Try all time slots in the same day
+            for start_slot in range(0, 16 - duration_hours + 1):
+                # Check if this slot is empty
+                slot_empty = True
+                for h in range(start_slot, start_slot + duration_hours):
+                    if week_schedule[original_day][h] is not None:
+                        slot_empty = False
+                        break
+                
+                if slot_empty:
+                    # Place task in this empty slot
+                    for h in range(start_slot, start_slot + duration_hours):
+                        week_schedule[original_day][h] = task
+                    
+                    # Update task timing
+                    new_start_hour = start_slot + 6
+                    task['start_hour_int'] = new_start_hour
+                    task['end_hour_int'] = new_start_hour + duration_hours
+                    task['start_hour_str'] = f"{new_start_hour:02d}:00"
+                    task['end_hour_str'] = f"{new_start_hour + duration_hours:02d}:00"
+                    task['colspan'] = duration_hours
+                    
+                    print(f"✅ Rescheduled '{task['title']}' to {original_day} at {new_start_hour}:00")
+                    return True
+            
+            print(f"❌ No empty slots found for '{task['title']}' on {original_day}")
+            return False
+            
+        except Exception as e:
+            print(f"Error rescheduling task {task.get('title', 'Unknown')}: {e}")
+            return False
+
+    def move_to_tomorrow(task):
+        """Move task to the next day at a default morning time"""
+        try:
+            days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+            current_day_index = days.index(task['weekday'])
+            next_day_index = (current_day_index + 1) % 7
+            next_day = days[next_day_index]
+            
+            # Set to tomorrow at 9 AM (default)
+            task['weekday'] = next_day
+            task['start_hour_int'] = 9
+            task['end_hour_int'] = 10  # Default 1-hour duration
+            task['start_hour_str'] = "09:00"
+            task['end_hour_str'] = "10:00"
+            task['colspan'] = 1
+            
+            print(f"📅 Moved '{task['title']}' to {next_day} at 9:00 AM")
+            
+        except Exception as e:
+            print(f"Error moving task to tomorrow {task.get('title', 'Unknown')}: {e}")
+            # Fallback: keep original timing
+            pass
+
+    def save_optimized_schedule(optimized_schedule):
+        """Save the optimized schedule back to the database with proper dates"""
+        conn = get_db()
+        print("🔍 DEBUG: Starting save_optimized_schedule")
+        print(f"🔍 Schedule has {sum(len(slots) for slots in optimized_schedule.values())} slots")
+        
+        # Get current week dates
+        now = datetime.now()
+        start_of_week = now - timedelta(days=now.weekday())
+        days_dates = {
+            "Monday": start_of_week,
+            "Tuesday": start_of_week + timedelta(days=1),
+            "Wednesday": start_of_week + timedelta(days=2),
+            "Thursday": start_of_week + timedelta(days=3),
+            "Friday": start_of_week + timedelta(days=4),
+            "Saturday": start_of_week + timedelta(days=5),
+            "Sunday": start_of_week + timedelta(days=6),
+        }
+        
+        updated_count = 0
+        for day in optimized_schedule:
+            for hour_slot in optimized_schedule[day]:
+                if hour_slot is not None:
+                    task = hour_slot
+                    # Calculate new deadline based on day and end hour
+                    day_date = days_dates[day]
+                    new_deadline = day_date.replace(
+                        hour=task['end_hour_int'], 
+                        minute=0, 
+                        second=0
+                    )
+                    
+                    # Update the task in database
+                    conn.execute("""
+                        UPDATE tasks 
+                        SET deadline = ?
+                        WHERE id = ?
+                    """, (new_deadline.strftime("%Y-%m-%d %H:%M"), task['id']))
+                    updated_count += 1
+        
+        conn.commit()
+        print(f"💾 Saved {updated_count} optimized tasks to database")
+    # ==================== END OF RESCHEDULE FUNCTIONS ====================
+
+    # Apply rescheduling
+    optimized_schedule = reschedule_flexible_tasks(tasks)
+
+    # Save to database
+    save_optimized_schedule(optimized_schedule)
+
+    set_optimization_state(True)
+    
+    # Convert schedule back to task list for display
+    tasks_for_calendar = []
+    seen_task_ids = set()
+    
+    for day in optimized_schedule:
+        for task in optimized_schedule[day]:
+            if task and task['id'] not in seen_task_ids:
+                tasks_for_calendar.append(task)
+                seen_task_ids.add(task['id'])
+
+    # If no tasks were placed, fall back to original tasks
+    if not tasks_for_calendar:
+        tasks_for_calendar = tasks
 
     today = datetime.now()
-    formatted_date = today.strftime("%B %d, %Y")
-    week_number = today.isocalendar()[1]
-
-    print("Optimized tasks prepared for Main:", tasks_for_calendar)
-
     return render_template(
         "Main.html",
         tasks=tasks_for_calendar,
-        formatted_date=formatted_date,
-        week_number=week_number,
+        formatted_date=today.strftime("%B %d, %Y"),
+        week_number=today.isocalendar()[1],
         optimized=True
     )
-
-
 @app.route('/mark_completed/<int:task_id>', methods=['POST'])
 def mark_completed(task_id):
     conn = get_db()
@@ -319,6 +537,7 @@ def get_task_hierarchy_modal_content():
     tasks = [dict(row) for row in tasks]
     # Render a partial template for the modal body
     return render_template("task_hierarchy_modal_content.html", tasks=tasks)
+
 
 # App Entry Point
 # -------------------------

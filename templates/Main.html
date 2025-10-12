@@ -110,6 +110,15 @@
         }
 
         /* Task block styles */
+
+        .windows-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 180px); /* uniform box width */
+            gap: 15px;
+            justify-content: center;
+            align-items: center;
+        }
+
         .task-block {
             cursor: pointer;
             border: 1px solid transparent;
@@ -119,6 +128,7 @@
             margin-bottom: 4px;
             border-radius: 4px;
             font-size: 0.85rem;
+            font-weight: 600;
             min-height: 30px;
             display: flex;
             flex-direction: column;
@@ -169,6 +179,18 @@
         .btn:disabled {
             opacity: 0.6;
             cursor: not-allowed;
+        }
+
+        .windows-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr); /* 2 columns */
+            gap: 15px;
+            justify-content: center;  /* centers the grid items horizontally */
+            align-items: center;      /* centers them vertically */
+            text-align: center;
+            max-width: 400px;         /* optional: control total width */
+            margin: 0 auto;           /* centers the grid in its parent container */
+            padding: 10px;
         }
 
         /* Floating alert */
@@ -242,27 +264,25 @@
                 <aside class="bg-beige text-dark p-4" style="min-width: 300px;">
                     <h3 class="mt-3">You have...</h3>
                     <hr class="bg-secondary">
-                    <div class="windows-grid">
-                      {% set urgent_count, important_count, normal_count, unessential_count = 0, 0, 0, 0 %}
-    {% for task in tasks %}
-        {% if task.score >= 70 %}
-            {% set urgent_count = urgent_count + 1 %}
-        {% elif task.score >= 40 %}
-            {% set important_count = important_count + 1 %}
-        {% elif task.score >= 10 %}
-            {% set normal_count = normal_count + 1 %}
-        {% else %}
-            {% set unessential_count = unessential_count + 1 %}
-        {% endif %}
-    {% endfor %}
+                    <div class="windows-grid text-center mb-3">
 
-    <div class="windows-grid text-center">
-        <div class="bg-danger text-white p-4">{{ urgent_count }} Urgent</div>
-        <div class="bg-warning text-dark p-4">{{ important_count }} Important</div>
-        <div class="bg-primary text-white p-4">{{ normal_count }} Normal</div>
-        <div class="bg-secondary text-white p-4">{{ unessential_count }} Unessential</div>
-    </div>
+                    <div class="d-flex justify-content-center align-items-center">
+                   <div class="windows-grid text-center">
+                   <div class="task-block score-critical text-white p-4">
+                    {{ urgent_count }} Urgent Task{{ 's' if urgent_count != 1 }}
+                       </div>
+                   <div class="task-block score-high text-white p-4">
+                    {{ important_count }} Important Task{{ 's' if important_count != 1 }}
+                         </div>
+                      <div class="task-block score-medium p-4">
+                       {{ normal_count }} Normal Task{{ 's' if normal_count != 1 }}
+                         </div>
+                     <div class="task-block score-low text-white p-4">
+                      {{ unessential_count }} Unessential Task{{ 's' if unessential_count != 1 }}
+                             </div>
+                        </div>
                     </div>
+
                     <div class="bg-dark text-light p-4 mt-3">
                         <h6>Weekly Actions</h6>
                         <button id="taskHierarchyBtn" class="btn btn-success mt-3 w-100" data-bs-toggle="modal"
