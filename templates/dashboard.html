@@ -11,69 +11,214 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;700&display=swap" rel="stylesheet">
     <style>
         /* ...existing CSS unchanged... */
-        
-        input[type="time"]::-webkit-calendar-picker-indicator { display: none; }
-        
-        input[type="time"] { -moz-appearance: textfield; }
-        
-        body { margin: 0; display: flex; background-color: beige; }
-        
-        .h5 { font-weight: bold; }
-        
-        .logo { width: 120px; height: 120px; object-fit: contain; }
-        
-        .d-flex { height: 100vh; width: 100%; }
-        
-        .sidebar { min-width: 300px; max-width: 320px; width: 300px; }
-        
-        .sidebar-links h6 { font-size: 0.75rem; text-transform: uppercase; color: #adb5bd; margin-bottom: 10px; font-weight: 600; }
-        
-        .sidebar-links li a { display: flex; align-items: center; gap: 8px; padding: 10px; border-radius: 6px; color: #fff; transition: background 0.2s ease-in-out; font-weight: 600; }
-        
-        .sidebar-links li a:hover { background-color: #0d6efd; text-decoration: none; }
-        
-        .sidebar-links li a.active { background-color: #0b5ed7; }
-        
-        .main-content { background-color: #f5f0e6; padding: 30px; flex-grow: 1; color: black; }
-        
-        .main-content h1 { margin-bottom: 20px; }
-        
-        .content { display: flex; justify-content: space-between; gap: 40px; }
-        
-        .hidden { display: none; }
-        .form-section { background-color: #4a7d7d; padding: 30px; border-radius: 10px; width: 45%; display: flex; flex-direction: column; gap: 16px; color: white; }
-        
-        .form-section input, .form-section select { padding: 14px; border: none; border-radius: 10px; font-size: 1rem; background-color: #ffffff; color: #333; font-weight: 500; width: 100%; }
-        
-        .form-section label { font-weight: 600; margin-top: 10px; }
-        
-        .form-section .form-group { display: flex; flex-direction: column; gap: 10px; }
-        
-        .custom-btn:hover { background-color: #3b6666 !important; border-color: #3b6666 !important; }
-        
-        .add-btn, .remove-btn, .add-reminder-btn { margin-top: 30px; padding: 14px 20px; font-size: 1rem; background-color: black; color: white; border: none; border-radius: 10px; cursor: pointer; width: 100%; }
-        
-        .optimize-btn { padding: 10px; background-color: black; color: white; border: none; border-radius: 10px; cursor: pointer; margin: 60px 0px 20px 0px; }
-        
-        .optimize-btn:hover { background-color: #3b6666 !important; border-color: #3b6666 !important; }
-        
-        @media (max-width: 768px) {
-            .content { flex-direction: column; }
-            
-            .remove-reminder-btn { margin-top: 20px; padding: 14px 20px; font-size: 1rem; background-color: black; color: white; border: none; border-radius: 10px; cursor: pointer; width: 100%; }
-            
-            .remove-reminder-btn:hover { background-color: #3b6666 !important; border-color: #3b6666 !important; }
+
+        input[type="time"]::-webkit-calendar-picker-indicator {
+            display: none;
         }
+
+        input[type="time"] {
+            appearance: textfield;
+            -webkit-appearance: textfield;
+            -moz-appearance: textfield;
+        }
+
+        body {
+            margin: 0;
+            display: flex;
+            background-color: beige;
+        }
+
+        .logo {
+            width: 120px;
+            height: 120px;
+            object-fit: contain;
+        }
+
+        .d-flex {
+            height: 100vh;
+            width: 100%;
+        }
+
+        .sidebar {
+            min-width: 300px;
+            max-width: 320px;
+            width: 300px;
+        }
+
+        .sidebar-links h6 {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            color: #adb5bd;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .sidebar-links li a {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px;
+            border-radius: 6px;
+            color: #fff;
+            transition: background 0.2s ease-in-out;
+            font-weight: 600;
+        }
+
+        .sidebar-links li a:hover {
+            background-color: #0d6efd;
+            text-decoration: none;
+        }
+
+        .sidebar-links li a.active {
+            background-color: #0b5ed7;
+        }
+
+        .main-content {
+            background-color: #f5f0e6;
+            padding: 30px;
+            flex-grow: 1;
+            color: black;
+        }
+
+        .main-content h1 {
+            margin-bottom: 20px;
+        }
+
+        .content {
+            display: flex;
+            justify-content: space-between;
+            gap: 40px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .form-section {
+            background-color: #4a7d7d;
+            padding: 30px;
+            border-radius: 10px;
+            width: 45%;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            color: white;
+        }
+
+        .form-section input,
+        .form-section select {
+            padding: 14px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            background-color: #ffffff;
+            color: #333;
+            font-weight: 500;
+            width: 100%;
+        }
+
+        .form-section label {
+            font-weight: 600;
+            margin-top: 10px;
+        }
+
+        .form-section .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .custom-btn:hover {
+            background-color: #3b6666 !important;
+            border-color: #3b6666 !important;
+        }
+
+        .add-btn,
+        .remove-btn,
+        .add-reminder-btn {
+            margin-top: 30px;
+            padding: 14px 20px;
+            font-size: 1rem;
+            background-color: black;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        .optimize-btn {
+            padding: 10px;
+            background-color: black;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            margin: 60px 0px 20px 0px;
+        }
+
+        .optimize-btn:hover {
+            background-color: #3b6666 !important;
+            border-color: #3b6666 !important;
+        }
+
+        @media (max-width: 768px) {
+            .content {
+                flex-direction: column;
+            }
+
+            .remove-reminder-btn {
+                margin-top: 20px;
+                padding: 14px 20px;
+                font-size: 1rem;
+                background-color: black;
+                color: white;
+                border: none;
+                border-radius: 10px;
+                cursor: pointer;
+                width: 100%;
+            }
+
+            .remove-reminder-btn:hover {
+                background-color: #3b6666 !important;
+                border-color: #3b6666 !important;
+            }
+        }
+
+            .btn-clear {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 5px;
+                 cursor: pointer;
+                 margin-left: 10px;
+            }
+
+            .btn-clear:hover {
+             background: #c0392b;
+            }
+
+            .optimized .optimize-section {
+            display: none;
+}
+
+/* Or if you want a smooth transition */
+.optimize-section {
+    transition: all 0.3s ease;
+}
+
+        .optimized .optimize-section {
+    opacity: 0;
+    height: 0;
+    overflow: hidden;
+    margin: 0;
+    padding: 0;
+}
     </style>
-</head>
-
-<body class="bg-beige">
-
-    <!-- Sidebar -->
     <aside class="sidebar bg-dark text-white p-3">
         <div class="sidebar-header text-center mb-4">
-            <img src="{{ url_for('static', filename='icon/Icon.png') }}" alt="SchedAssist logo" class="logo"
-                onerror="this.src='{{ url_for('static', filename='icon/Icon-fallback.png') }}'">
+             <img src="{{ url_for('static', filename='icon/Icon.png') }}" alt="SchedAssist logo" class="logo">
             <h2 class="h5">SchedAssistant</h2>
         </div>
         <ul class="list-unstyled sidebar-links">
@@ -105,16 +250,16 @@
                         <label for="deadline">Deadline</label>
                         <input type="datetime-local" name="deadline" id="end_date" required style="margin-bottom: 10px;" />
                         <label for="duration_hours">Duration</label>
-<div style="display: flex; gap: 10px;">
-  <input type="number" name="duration_hours" min="0" max="23" placeholder="Hours" required />
-  <input type="number" name="duration_minutes" min="0" max="59" placeholder="Minutes" required />
-</div>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="number" name="duration_hours" min="0" max="23" placeholder="Hours" required />
+                            <input type="number" name="duration_minutes" min="0" max="59" placeholder="Minutes" required />
+                        </div>
 
                         <!-- Flexible checkbox -->
-                        <label style="font-size: 0.85rem; display: flex; align-items: center; gap: 6px; margin-top: 8px;">
-                            <input type="checkbox" name="is_flexible" style="width: 16px; height: 16px; margin: 0;" />
-                            <span>Task is flexible (can be split or moved)</span>
-                        </label>
+                        <select name="task_type p-3" id="task_type">
+                             <option value="uninterrupted">Uninterrupted (Fixed Time)</option>
+                                <option value="flexible">Flexible (Can be moved)</option>
+                        </select>
                     </div>
 
                     <!-- Reminders -->
@@ -164,6 +309,7 @@
                     <!-- Submit -->
                     <button class="add-btn custom-btn" type="submit">Add Task</button>
                 </form>
+
             </div>
 
             <!-- Right: Task Table -->
@@ -171,7 +317,7 @@
                 style="background-color: white; width: 60%; border-radius: 10px; padding: 20px; display: flex; flex-direction: column;">
                 <h3 style="margin-bottom: 10px;">Task Overview</h3>
                 <table
-                    style="width: 100%; border-collapse: separate; border-spacing: 0; background-color: #f8f8f8; border-radius: 10px; box-shadow: 0 0 0 1px #ccc; margin-bottom: 20px;">
+                    style="optimized optimize-section width: 100%; border-collapse: separate; border-spacing: 0; background-color: #f8f8f8; border-radius: 10px; box-shadow: 0 0 0 1px #ccc; margin-bottom: 20px;">
                     <thead style="background-color: #eaeaea;">
                         <tr>
                             <th style="padding: 12px; text-align: left;">Title</th>
@@ -196,13 +342,15 @@
                                 No
                                 {% endif %}
                             </td>
-                            
+
                             <td style="padding: 12px;">{{ task.category }}</td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
-                <button class="optimize-btn" type="submit">Optimize Tasks</button>
+                <form action="{{ url_for('optimize_tasks') }}" method="POST">
+                    <button type="submit" class="btn btn-primary">Optimize Tasks</button>
+                </form>
             </div>
         </div>
     </div>
@@ -230,6 +378,7 @@
                 addBtn.style.display = "inline-block";
             });
 
+
             // Duration change log
             document.getElementById("duration").addEventListener("change", function () {
                 const value = this.value;
@@ -241,5 +390,6 @@
         });
     </script>
 
-</body>
+    </body>
+
 </html>
