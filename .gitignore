@@ -18,3 +18,5 @@ instance/
 .DS_Store
 Thumbs.db
 .venv
+tasks.db
+*.db
