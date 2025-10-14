@@ -118,13 +118,14 @@
             align-items: flex-start;
             gap: 5px;
             width: 100%;
+            /* Remove explicit min-width/max-content if scroll-container handles it */
         }
 
         .time-column-standalone {
             min-width: 80px;
             max-width: 80px;
             background: #f8f9fa;
-            border-radius: 10px;
+            border-radius: 10px 0px 0px 0px;
             overflow: hidden;
             box-shadow: 0 0 5px rgba(0, 0, 0, 0.05);
         }
@@ -146,7 +147,7 @@
         }
 
         .time-column-standalone .time-label {
-            height: 60px;
+            height: 30px; /* Changed to match 30-minute slot height */
             padding: 5px;
             text-align: center;
             background: #f8f9fa;
@@ -160,15 +161,16 @@
         .schedule-grid {
             display: grid;
             grid-template-columns: repeat(7, 1fr);
-            grid-template-rows: 50px repeat(96, 15px);
+            grid-template-rows: 50px repeat(32, 30px); /* 1 header row + 32 slots * 30px height */
             gap: 1px;
             background-color: #ddd;
             border: 1px solid #ddd;
             width: 100%;
-            border-radius: 10px;
+            border-radius: 0px 10px 0px 0px;
             flex-grow: 1;
-	    position: relative; 
+	        position: relative; 
     	    z-index: 1;
+            min-width: 700px; /* Minimum width for the grid content to prevent squishing */
         }
 
         .day-label {
@@ -185,13 +187,16 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            /* Ensure day labels have a fixed width or can shrink */
+            width: 100%; /* Occupy full column width */
         }
 
         .grid-cell {
             background: white;
             border-bottom: 1px solid #eee;
-	    position: relative;
+	        position: relative;
     	    z-index: 1;
+            height: 30px; /* Match slot height */
         }
 
         .task-block,
@@ -204,7 +209,7 @@
         .task-block.score-medium,
         .task-block.score-low {
             color: white;
-}
+        }
 
         /* Task Blocks */
         .task-block {
@@ -212,9 +217,9 @@
             border: 1px solid transparent;
             transition: all 0.2s ease-in-out;
             color: white;
-            padding: 8px 6px;
-            border-radius: 8px;
-            font-size: 0.8rem;
+            padding: 4px 3px; /* Adjusted padding for smaller slots */
+            border-radius: 4px; /* Adjusted border-radius */
+            font-size: 0.7rem; /* Adjusted font size */
             font-weight: 600;
             display: flex;
             flex-direction: column;
@@ -229,6 +234,7 @@
             align-items: center;
             justify-content: center;
             text-align: center;
+            line-height: 1.2;
         }
 	
 	.task-block:hover {
@@ -317,6 +323,37 @@
                     rgba(220, 53, 69, 0.1) 20px) !important;
         }
 
+	    .calendar-scroll-container {
+            width: 100%;
+            overflow-x: auto; 
+            overflow-y: auto; 
+            max-height: 100vh; 
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            background: white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+	    }
+
+	.calendar-scroll-container::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+
+    .calendar-scroll-container::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 4px;
+    }
+
+    .calendar-scroll-container::-webkit-scrollbar-thumb {
+        background: #c1c1c1;
+        border-radius: 4px;
+    }
+
+    .calendar-scroll-container::-webkit-scrollbar-thumb:hover {
+        background: #a8a8a8;
+    }
+
+
         @keyframes pulse {
             0% {
                 transform: scale(1);
@@ -399,7 +436,7 @@
 
             <div class="main-content-wrapper">
                 <!-- Left Panel -->
-                <aside class="bg-beige text-dark p-4" style="min-width: 300px;">
+                <aside class="bg-beige text-dark p-4 left-panel">
                     <h3 class="mt-3">You have...</h3>
                     <hr class="bg-secondary">
                     <div class="windows-grid">
@@ -421,7 +458,7 @@
                         </div>
                     </div>
 
-                    <div class="bg-dark text-light p-4 mt-3">
+                    <div class="bg-dark text-light p-4 mt-3" style="min-width: 250px; max-width: 300px;"> <!-- Adjusted width -->
                         <h6>Weekly Actions</h6>
                         <button id="taskHierarchyBtn" class="btn btn-success mt-3 w-100" data-bs-toggle="modal"
                             data-bs-target="#taskHierarchyModal">Task Hierarchy</button>
@@ -434,70 +471,69 @@
                     </div>
                 </aside>
 
-<div class="right-panel">
-<div class="schedule-outer-container">
-    <!-- Time Column -->
-    <div class="time-column-standalone">
-        <div class="day-label bg-dark text-white time-header-sticky">Time</div>
-        {% for i in range(96) %}
-        {% set total_minutes = i * 15 %}
-        {% set hour = 6 + (total_minutes // 60) %}
-        {% set minute = total_minutes % 60 %}
-        {% if minute == 0 %}
-             <div class="time-label">{{ "%02d:00"|format(hour) }}</div>
-        {% endif %}
-        {% endfor %}
-    </div>
+                <div class="right-panel">
+                    <div class="calendar-scroll-container">
+                        <div class="schedule-outer-container">
+                            <!-- Time Column -->
+                            <div class="time-column-standalone">
+                                <div class="day-label bg-dark text-white time-header-sticky">Time</div>
+                                {% for i in range(16) %} 
+                                    {% set hour = 6 + i %}
+                                    <div class="time-label">{{ "%02d:00"|format(hour) }}</div>
+                                    <div class="time-label">{{ "%02d:30"|format(hour) }}</div>
+                                {% endfor %}
+                            </div>
 
-    <!-- Schedule Grid -->
-    <div class="schedule-container flex-grow-1">
-    <div class="schedule-grid">
-        <!-- Day Labels -->
-        {% set day_columns = {'Monday': 1, 'Tuesday': 2, 'Wednesday': 3, 'Thursday': 4, 'Friday': 5, 'Saturday': 6, 'Sunday': 7} %}
-        
-        {% for day in ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'] %}
-        <div class="day-label" style="grid-column: {{ day_columns[day] }}; grid-row: 1;">{{ day }}</div>
-        {% endfor %}
+                            <!-- Schedule Grid -->
+                            <div class="schedule-grid">
+                                <!-- Day Labels -->
+                                {% set day_columns = {'Monday': 1, 'Tuesday': 2, 'Wednesday': 3, 'Thursday': 4, 'Friday': 5, 'Saturday': 6, 'Sunday': 7} %}
+                                
+                                {% for day in ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'] %}
+                                <div class="day-label" style="grid-column: {{ day_columns[day] }}; grid-row: 1;">{{ day }}</div>
+                                {% endfor %}
 
-        <!-- Grid cells -->
-        {% for i in range(96) %}
-            {% set current_grid_row = i + 2 %}
-            {% for day in ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'] %}
-            <div class="grid-cell"
-    style="grid-column: {{ day_columns[day] }}; grid-row: {{ current_grid_row }}">
-    </div>
-            {% endfor %}
-        {% endfor %}
+                                <!-- Grid cells -->
+                                {% for i in range(32) %} {# 32 slots for 16 hours * 2 #}
+                                    {% set current_grid_row = i + 2 %} {# +2 because grid-row starts after header #}
+                                    {% for day in ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'] %}
+                                    <div class="grid-cell"
+                                        style="grid-column: {{ day_columns[day] }}; grid-row: {{ current_grid_row }}">
+                                    </div>
+                                    {% endfor %}
+                                {% endfor %}
 
-        <!-- Tasks -->
-        {% for task in tasks %}
-            {% if task.weekday and task.start_hour_int is defined and task.end_hour_int is defined %}
-                {% set start_minutes = (task.start_hour_int - 6) * 60 + (task.start_hour_str.split(':')[1] | int) %}
-                {% set end_minutes = (task.end_hour_int - 6) * 60 + (task.end_hour_str.split(':')[1] | int) %}
-                {% set duration_minutes = end_minutes - start_minutes %}
-                {% set duration_rows = (duration_minutes + 14) // 15 %}
-                {% set duration_rows = duration_rows if duration_rows > 0 else 1 %}
-                {% set day_col = day_columns[task.weekday] %}
-                <div class="task-block {{ task.category }} 
-                    {% if task.score >= 70 %}score-critical
-                    {% elif task.score >= 40 %}score-high
-                    {% elif task.score >= 10 %}score-medium
-                    {% else %}score-low{% endif %}"
-                    style="grid-column: {{ day_col }}; grid-row: {{ (start_minutes // 15) + 2 }} / span {{ duration_rows }};"
-                    data-task-id="{{ task.id }}" 
-                    data-title="{{ task.title }}"
-                    data-deadline="{{ task.deadline }}"
-                    data-reminders='{{ task.reminders or [] | tojson | safe }}' 
-                    data-score="{{ task.score }}"
-                    data-start-time="{{ task.start_hour_str }}"
-                    data-end-time="{{ task.end_hour_str }}">
-                    {{ task.title }}
-                </div>
-            {% endif %}
-        {% endfor %}
-                      </div>
+                                <!-- Tasks -->
+                                {% for task in tasks %}
+                                    {% if task.weekday and task.start_hour_int is defined and task.end_hour_int is defined %}
+                                        {# Calculate start slot index #}
+                                        {% set start_slot_index = ((task.start_hour_int - 6) * 60 + task.start_minute_int) // 30 %}
+                                        {# Calculate number of slots needed #}
+                                        {% set duration_minutes = task.duration if task.duration is defined else 60 %} {# Default to 60 mins #}
+                                        {% set num_slots = (duration_minutes + 29) // 30 %} {# Ceil to nearest 30 min block #}
+                                        {% set num_slots = num_slots if num_slots > 0 else 1 %}
+                                        
+                                        {% set day_col = day_columns[task.weekday] %}
+                                        <div class="task-block {{ task.category }} 
+                                            {% if task.score >= 70 %}score-critical
+                                            {% elif task.score >= 40 %}score-high
+                                            {% elif task.score >= 10 %}score-medium
+                                            {% else %}score-low{% endif %}"
+                                            style="grid-column: {{ day_col }}; grid-row: {{ start_slot_index + 2 }} / span {{ num_slots }};"
+                                            data-task-id="{{ task.id }}" 
+                                            data-title="{{ task.title }}"
+                                            data-deadline="{{ task.deadline }}"
+                                            data-reminders='{{ task.reminders or [] | tojson | safe }}' 
+                                            data-score="{{ task.score }}"
+                                            data-start-time="{{ task.start_hour_str }}"
+                                            data-end-time="{{ task.end_hour_str }}">
+                                            {{ task.title }}
+                                        </div>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                        </div>
                     </div>
-                  </div>
                 </div>
             </div>
         </main>
@@ -519,6 +555,11 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const tasks = document.querySelectorAll('.task-block');
+            const now = new Date();
+
         function showAlert(msg) {
             const alertBox = document.createElement('div');
             alertBox.className = 'alert';
@@ -567,7 +608,7 @@
             if (targetBlock) {
                 const taskId = targetBlock.dataset.taskId;
                 if (selectedTaskId === taskId) {
-                    targetBlock.classList.remove('selected');
+                    document.querySelectorAll('.task-block.selected').forEach(block => block.classList.remove('selected'));
                     selectedTaskId = null;
                 } else {
                     document.querySelectorAll('.task-block.selected').forEach(block => block.classList.remove('selected'));
@@ -578,10 +619,6 @@
                 updateSelectedTaskDetailsDisplay();
             }
         });
-
-        document.addEventListener('DOMContentLoaded', () => {
-            const tasks = document.querySelectorAll('.task-block');
-            const now = new Date();
             
             tasks.forEach(task => {
                 const title = task.dataset.title;
@@ -608,25 +645,27 @@
                         }, delay);
                     }
                 });
-            });
+            
 
             function updateTaskUrgency() {
                 const current = new Date();
                 tasks.forEach(task => {
                     const deadline = new Date(task.dataset.deadline);
                     const remaining = deadline - current;
-                    const originalScore = parseFloat(task.dataset.score);
                     
-                    if (remaining < 0) {
+                    task.classList.remove('urgent-task', 'overdue-task'); // Clear existing states
+
+                    if (remaining < 0) { // Overdue
+                        task.classList.add('overdue-task');
                         task.classList.remove('score-low', 'score-medium', 'score-high', 'score-critical');
-                        task.classList.add('score-critical');
-                        task.style.border = '2px solid #dc3545';
-                    } else if (remaining < 30 * 60 * 1000) {
+                        task.classList.add('score-critical'); // Ensure it's visually critical
+                    } else if (remaining < 30 * 60 * 1000) { // Less than 30 minutes
                         task.classList.add('urgent-task');
-                    } else if (remaining < 2 * 60 * 60 * 1000) {
-                        task.style.border = '1px solid #fd7e14';
+                    } else if (remaining < 2 * 60 * 60 * 1000) { // Less than 2 hours
+                        task.style.border = '1px solid #fd7e14'; // Orange border
                     } else {
-                        task.classList.remove('urgent-task', 'overdue-task');
+                        // Reset border if no special urgency
+                        task.style.border = ''; // Or whatever default it should be
                     }
                 });
             }
@@ -667,6 +706,7 @@
         });
 
         updateActionButtons();
+        });
     </script>
 </body>
 

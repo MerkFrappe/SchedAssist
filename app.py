@@ -1,5 +1,5 @@
 from math import ceil
-from flask import Flask, render_template, request, redirect, url_for, g
+from flask import Flask, jsonify, render_template, request, redirect, url_for, g
 from datetime import datetime, timedelta
 import sqlite3
 import os
@@ -122,7 +122,7 @@ def schedule():
             # Calculate start time by subtracting duration from deadline
             # Duration is in minutes, so convert to timedelta
             duration_td = timedelta(minutes=task.get('duration', 60)) # Default to 60 minutes if not set
-            start_dt = deadline_dt - duration_td
+            start_dt = deadline_dt - duration_td #flag
 
             task['weekday'] = start_dt.strftime('%A') # The day the task *starts*
             task['start_hour_int'] = start_dt.hour
@@ -134,7 +134,8 @@ def schedule():
             task['start_hour_str'] = start_dt.strftime('%H:%M')
             task['end_hour_str'] = deadline_dt.strftime('%H:%M')
 
-
+            if not task.get('reminders'):
+                task['reminders'] = []
 
             tasks_for_calendar.append(task)
 
@@ -329,10 +330,8 @@ def optimize_tasks():
             task['colspan'] = max(1, ceil(total_duration_minutes / 30))
             
             # Parse reminders
-            if task.get("reminders") and task["reminders"] not in (None, "", "null"):
-                task["reminders"] = [r.strip() for r in task["reminders"].split(",") if r.strip()]
-            else:
-                task["reminders"] = []
+            if not task.get('reminders'):
+                task['reminders'] = []
                 
             tasks.append(task)
         except Exception as e:
@@ -607,10 +606,11 @@ def get_task_hierarchy_modal_content():
         WHERE isCompleted = 0
         ORDER BY score DESC, deadline ASC
     """).fetchall()
-    conn.close()
+    conn.close()  
     tasks = [dict(row) for row in tasks]
     # Render a partial template for the modal body
     return render_template("task_hierarchy_modal_content.html", tasks=tasks)
+
 
 
 # App Entry Point
