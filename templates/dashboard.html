@@ -225,10 +225,10 @@
                         </div>
 
                         <!-- Flexible checkbox -->
-                        <label style="font-size: 0.85rem; display: flex; align-items: center; gap: 6px; margin-top: 8px;">
-                            <input type="checkbox" name="is_flexible" style="width: 16px; height: 16px; margin: 0;" />
-                            <span>Task is flexible (can be split or moved)</span>
-                        </label>
+                        <select name="task_type p-3" id="task_type">
+                             <option value="uninterrupted">Uninterrupted (Fixed Time)</option>
+                                <option value="flexible">Flexible (Can be moved)</option>
+                        </select>
                     </div>
 
                     <!-- Reminders -->

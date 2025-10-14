@@ -1,4 +1,4 @@
-
+from math import ceil
 from flask import Flask, render_template, request, redirect, url_for, g
 from datetime import datetime, timedelta
 import sqlite3
@@ -117,7 +117,7 @@ def schedule():
     for row in raw_tasks:
         task = dict(row)
         try:
-            deadline_dt = datetime.strptime(task['deadline'], "%Y-%m-%d %H:%M")
+            deadline_dt = datetime.strptime(task['deadline'], "%Y-%m-%dT%H:%M" if 'T' in task['deadline'] else "%Y-%m-%d %H:%M") # Handle both formats
             
             # Calculate start time by subtracting duration from deadline
             # Duration is in minutes, so convert to timedelta
@@ -127,6 +127,8 @@ def schedule():
             task['weekday'] = start_dt.strftime('%A') # The day the task *starts*
             task['start_hour_int'] = start_dt.hour
             task['end_hour_int'] = deadline_dt.hour # The hour the task *ends* (exclusive for display)
+            task['start_minute_int'] = start_dt.minute
+            task['end_minute_int'] = deadline_dt.minute
             
             # For display purposes if needed, though the int versions are better for comparison
             task['start_hour_str'] = start_dt.strftime('%H:%M')
@@ -270,7 +272,7 @@ def submit():
     reminder_value_total = sum(val for _, val in valid_reminders)
     importance = category_weight * reminder_value_total
 
-    # Flexibility
+    # Flexibility - FIXED THIS PART
     task_type = request.form.get('task_type', 'uninterrupted')
     is_flexible = 1 if task_type == 'flexible' else 0
     flexibility_weight = 1.0 if is_flexible else 1.2
@@ -278,7 +280,9 @@ def submit():
     # Final priority score
     score = (urgency_score * 0.35) + (importance * 0.7) * flexibility_weight
 
-    # Insert into database
+    # Insert into database - DEBUG OUTPUT
+    print(f"🔧 DEBUG: Task '{title}' - is_flexible: {is_flexible}, task_type: '{task_type}'")
+    
     db = get_db()
     db.execute("""
                INSERT INTO tasks (title, deadline, duration, is_flexible, reminders, category, score, isCompleted)
@@ -286,9 +290,9 @@ def submit():
                """, (title, deadline.strftime("%Y-%m-%d %H:%M"), duration_minutes, is_flexible, ",".join(reminders), category, score, 0))
     db.commit()
 
-    print(f"Task '{title}' saved with score {score:.2f}")
+    print(f"Task '{title}' saved with score {score:.2f}, flexible: {is_flexible}")
     return redirect(url_for('dashboard'))
-  
+
 @app.route("/optimize_tasks", methods=["POST"])
 def optimize_tasks():
     conn = get_db()
@@ -298,6 +302,10 @@ def optimize_tasks():
         WHERE isCompleted = 0
         ORDER BY score DESC
     """).fetchall()
+
+    print("🔍 DEBUG - Tasks from database:")
+    for task in tasks_raw:
+        print(f"  - '{task['title']}': is_flexible={task['is_flexible']}, score={task['score']}")
 
     # Convert to dict and parse datetime
     tasks = []
@@ -311,9 +319,14 @@ def optimize_tasks():
             task["weekday"] = start_dt.strftime("%A")
             task["start_hour_int"] = start_dt.hour
             task["end_hour_int"] = deadline_dt.hour
+            task["start_minute_int"] = start_dt.minute
+            task["end_minute_int"] = deadline_dt.minute
             task["start_hour_str"] = start_dt.strftime('%H:%M')
             task["end_hour_str"] = deadline_dt.strftime('%H:%M')
-            task['colspan'] = max(1, task['end_hour_int'] - task['start_hour_int'])
+            
+            # Calculate colspan based on 30-minute slots
+            total_duration_minutes = task.get("duration", 60)
+            task['colspan'] = max(1, ceil(total_duration_minutes / 30))
             
             # Parse reminders
             if task.get("reminders") and task["reminders"] not in (None, "", "null"):
@@ -326,175 +339,205 @@ def optimize_tasks():
             print(f"⚠️ Error parsing task {task.get('title', 'N/A')}: {e}")
 
     # ==================== RESCHEDULE FUNCTIONS ====================
-    def reschedule_flexible_tasks(tasks):
-        """Reschedule flexible tasks with low scores to empty time slots"""
-        # Initialize week schedule (6 AM to 10 PM, 16 hours)
-        week_schedule = {
-            day: [None] * 16 for day in [
+
+     # Constants for schedule mapping
+    SCHEDULE_START_HOUR = 6  # 6 AM
+    SCHEDULE_END_HOUR = 22   # 10 PM
+    SLOT_DURATION_MINUTES = 30
+    TOTAL_DAILY_SLOTS = (SCHEDULE_END_HOUR - SCHEDULE_START_HOUR) * (60 // SLOT_DURATION_MINUTES)  # 32 slots
+
+    def get_slot_index(hour, minute):
+        """Converts hour and minute to slot index (0-31)"""
+        if hour < SCHEDULE_START_HOUR or hour >= SCHEDULE_END_HOUR:
+            return -1
+        total_minutes = (hour - SCHEDULE_START_HOUR) * 60 + minute
+        return total_minutes // SLOT_DURATION_MINUTES
+
+    def get_time_from_slot_index(slot_index):
+        """Converts slot index back to hour and minute"""
+        total_minutes = slot_index * SLOT_DURATION_MINUTES
+        hour = SCHEDULE_START_HOUR + (total_minutes // 60)
+        minute = total_minutes % 60
+        return hour, minute
+
+    def get_num_slots_for_duration(duration_minutes):
+        """Calculates number of slots needed for duration"""
+        return max(1, ceil(duration_minutes / SLOT_DURATION_MINUTES))
+
+    def initialize_schedule():
+        """Initialize empty schedule for the week"""
+        return {
+            day: [None] * TOTAL_DAILY_SLOTS for day in [
                 "Monday", "Tuesday", "Wednesday", "Thursday", 
                 "Friday", "Saturday", "Sunday"
             ]
         }
-        
-        # First, place all non-flexible and high-priority tasks
-        for task in tasks:
-            if task.get('is_flexible', 0) == 0 or task.get('score', 0) >= 50:
-                place_task_in_schedule(week_schedule, task)
-        
-        # Then, reschedule flexible low-priority tasks
-        flexible_tasks = [t for t in tasks if t.get('is_flexible', 0) == 1 and t.get('score', 0) < 50]
-        print(f"🔄 Found {len(flexible_tasks)} flexible low-priority tasks to reschedule")
-        
-        for task in flexible_tasks:
-            if not reschedule_to_empty_slot(week_schedule, task):
-                # If no empty slot today, move to tomorrow
-                move_to_tomorrow(task)
-                # Try to place it in the new day
-                place_task_in_schedule(week_schedule, task)
-        
-        return week_schedule
 
-    def place_task_in_schedule(week_schedule, task):
-        """Place a task in its time slot if available"""
-        try:
-            day = task['weekday']
-            start_hour = task['start_hour_int']
-            duration_hours = max(1, (task['end_hour_int'] - task['start_hour_int']))
-            
-            # Check if slot is available
-            can_place = True
-            start_slot = start_hour - 6
-            
-            for h in range(start_slot, start_slot + duration_hours):
-                if h < 0 or h >= 16 or week_schedule[day][h] is not None:
-                    can_place = False
-                    break
-            
-            if can_place:
-                 # Update the actual deadline, not just display times
-                    original_deadline = datetime.strptime(task['deadline'], "%Y-%m-%d %H:%M")
-                    new_deadline = original_deadline.replace(
-                    hour=task['start_hour_int'] + duration_hours,
-                    minute=0
-                )
-                    task['deadline'] = new_deadline.strftime("%Y-%m-%d %H:%M")
-                    print(f"✅ Placed '{task['title']}' on {day} at {start_hour}:00")
-                    return True
-            else:
-                print(f"❌ Could not place '{task['title']}' on {day} at {start_hour}:00 - slot occupied")
+    def can_place_task(schedule, day, start_slot, num_slots):
+        """Check if task can be placed at given position"""
+        if start_slot < 0 or start_slot + num_slots > TOTAL_DAILY_SLOTS:
+            return False
+        
+        for slot in range(start_slot, start_slot + num_slots):
+            if schedule[day][slot] is not None:
                 return False
-            
-        except Exception as e:
-            print(f"Error placing task {task.get('title', 'Unknown')}: {e}")
-            return False
+        return True
 
-    def reschedule_to_empty_slot(week_schedule, task):
-        """Try to reschedule task to an empty slot in the same day"""
-        try:
-            original_day = task['weekday']
-            duration_hours = max(1, (task['end_hour_int'] - task['start_hour_int']))
+    def place_task(schedule, task, day, start_slot):
+        """Place task at specified position"""
+        num_slots = task['num_slots']
+        
+        # Update task timing
+        new_start_hour, new_start_minute = get_time_from_slot_index(start_slot)
+        new_end_hour, new_end_minute = get_time_from_slot_index(start_slot + num_slots)
+        
+        task['weekday'] = day
+        task['start_slot_index'] = start_slot
+        task['start_hour_int'] = new_start_hour
+        task['start_minute_int'] = new_start_minute
+        task['end_hour_int'] = new_end_hour
+        task['end_minute_int'] = new_end_minute
+        task['start_hour_str'] = f"{new_start_hour:02d}:{new_start_minute:02d}"
+        task['end_hour_str'] = f"{new_end_hour:02d}:{new_end_minute:02d}"
+        
+        # Place in schedule
+        for slot in range(start_slot, start_slot + num_slots):
+            schedule[day][slot] = task
+        
+        return True
+
+    def find_empty_slot(schedule, task, preferred_day=None):
+        """Find empty slot for task, starting with preferred day then checking all days"""
+        days_to_check = []
+        
+        if preferred_day:
+            # Check preferred day first
+            days_to_check.append(preferred_day)
+            # Then check other days in order
+            all_days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+            for day in all_days:
+                if day != preferred_day:
+                    days_to_check.append(day)
+        else:
+            # Check all days in order
+            days_to_check = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+        
+        num_slots = task['num_slots']
+        
+        for day in days_to_check:
+            # Try to find empty slot on this day
+            for start_slot in range(0, TOTAL_DAILY_SLOTS - num_slots + 1):
+                if can_place_task(schedule, day, start_slot, num_slots):
+                    return day, start_slot
+        
+        return None, None
+
+    def reschedule_flexible_tasks(all_tasks):
+        """Main rescheduling function"""
+        schedule = initialize_schedule()
+        
+        # Separate tasks by type
+        fixed_tasks = [t for t in all_tasks if t.get('is_flexible', 0) == 0 or t.get('score', 0) >= 50]
+        flexible_tasks = [t for t in all_tasks if t.get('is_flexible', 0) == 1 and t.get('score', 0) < 50]
+        
+        print(f"📊 Task breakdown: {len(fixed_tasks)} fixed/high-priority, {len(flexible_tasks)} flexible/low-priority")
+        
+        # Process fixed/high-priority tasks first
+        placed_tasks = []
+        for task in fixed_tasks:
+            # Calculate original position
+            deadline_dt = datetime.strptime(task["deadline"], "%Y-%m-%d %H:%M")
+            start_dt = deadline_dt - timedelta(minutes=task.get("duration", 60))
             
-            # Try all time slots in the same day
-            for start_slot in range(0, 16 - duration_hours + 1):
-                # Check if this slot is empty
-                slot_empty = True
-                for h in range(start_slot, start_slot + duration_hours):
-                    if week_schedule[original_day][h] is not None:
-                        slot_empty = False
-                        break
+            original_day = start_dt.strftime('%A')
+            original_slot = get_slot_index(start_dt.hour, start_dt.minute)
+            task['num_slots'] = get_num_slots_for_duration(task.get("duration", 60))
+            
+            # Try to place at original position
+            if original_slot >= 0 and can_place_task(schedule, original_day, original_slot, task['num_slots']):
+                place_task(schedule, task, original_day, original_slot)
+                placed_tasks.append(task['id'])
+                print(f"✅ Fixed task placed: '{task['title']}' at {original_day} {task['start_hour_str']}")
+            else:
+                # Fixed task can't be moved, so find any available slot
+                found_day, found_slot = find_empty_slot(schedule, task, original_day)
+                if found_day and found_slot is not None:
+                    place_task(schedule, task, found_day, found_slot)
+                    placed_tasks.append(task['id'])
+                    print(f"🔄 Fixed task moved: '{task['title']}' to {found_day} {task['start_hour_str']}")
+                else:
+                    print(f"❌ Could not place fixed task: '{task['title']}'")
+        
+        # Process flexible tasks
+        for task in flexible_tasks:
+            if task['id'] in placed_tasks:
+                continue
                 
-                if slot_empty:
-                    # Place task in this empty slot
-                    for h in range(start_slot, start_slot + duration_hours):
-                        week_schedule[original_day][h] = task
-                    
-                    # Update task timing
-                    new_start_hour = start_slot + 6
-                    task['start_hour_int'] = new_start_hour
-                    task['end_hour_int'] = new_start_hour + duration_hours
-                    task['start_hour_str'] = f"{new_start_hour:02d}:00"
-                    task['end_hour_str'] = f"{new_start_hour + duration_hours:02d}:00"
-                    task['colspan'] = duration_hours
-                    
-                    print(f"✅ Rescheduled '{task['title']}' to {original_day} at {new_start_hour}:00")
-                    return True
+            # Calculate original position
+            deadline_dt = datetime.strptime(task["deadline"], "%Y-%m-%d %H:%M")
+            start_dt = deadline_dt - timedelta(minutes=task.get("duration", 60))
             
-            print(f"❌ No empty slots found for '{task['title']}' on {original_day}")
-            return False
+            original_day = start_dt.strftime('%A')
+            original_slot = get_slot_index(start_dt.hour, start_dt.minute)
+            task['num_slots'] = get_num_slots_for_duration(task.get("duration", 60))
             
-        except Exception as e:
-            print(f"Error rescheduling task {task.get('title', 'Unknown')}: {e}")
-            return False
-
-    def move_to_tomorrow(task):
-        current_deadline = datetime.strptime(task['deadline'], "%Y-%m-%d %H:%M")
-    # Move to next day
-        next_day_date = current_deadline + timedelta(days=1)
-        try:
-            days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-            current_day_index = days.index(task['weekday'])
-            next_day_index = (current_day_index + 1) % 7
-            next_day = days[next_day_index]
+            # Try to find empty slot starting with original day
+            found_day, found_slot = find_empty_slot(schedule, task, original_day)
             
-            # Set to tomorrow at 9 AM (default)
-            task['weekday'] = next_day
-            task['start_hour_int'] = 9
-            task['end_hour_int'] = 10  # Default 1-hour duration
-            task['start_hour_str'] = "09:00"
-            task['end_hour_str'] = "10:00"
-            task['colspan'] = 1
-            task['deadline'] = next_day_date.replace(hour=10, minute=0).strftime("%Y-%m-%d %H:%M")
-            print(f"📅 Moved '{task['title']}' to {next_day} at 9:00 AM")
-            
-        except Exception as e:
-            print(f"Error moving task to tomorrow {task.get('title', 'Unknown')}: {e}")
-            # Fallback: keep original timing
-            pass
+            if found_day and found_slot is not None:
+                place_task(schedule, task, found_day, found_slot)
+                placed_tasks.append(task['id'])
+                print(f"✅ Flexible task placed: '{task['title']}' at {found_day} {task['start_hour_str']}")
+            else:
+                print(f"❌ Could not place flexible task: '{task['title']}'")
+        
+        return schedule
 
     def save_optimized_schedule(optimized_schedule):
-        """Save the optimized schedule back to the database with proper dates"""
+        """Save the optimized schedule to database"""
         conn = get_db()
-        print("🔍 DEBUG: Starting save_optimized_schedule")
-        print(f"🔍 Schedule has {sum(len(slots) for slots in optimized_schedule.values())} slots")
+        updated_count = 0
+        processed_task_ids = set()
         
         # Get current week dates
-        now = datetime.now()
-        start_of_week = now - timedelta(days=now.weekday())
-        days_dates = {
-            "Monday": start_of_week,
-            "Tuesday": start_of_week + timedelta(days=1),
-            "Wednesday": start_of_week + timedelta(days=2),
-            "Thursday": start_of_week + timedelta(days=3),
-            "Friday": start_of_week + timedelta(days=4),
-            "Saturday": start_of_week + timedelta(days=5),
-            "Sunday": start_of_week + timedelta(days=6),
-        }
+        today = datetime.now()
+        start_of_week = today - timedelta(days=today.weekday())
         
-        updated_count = 0
-        for day in optimized_schedule:
-            for hour_slot in optimized_schedule[day]:
-                if hour_slot is not None:
-                    task = hour_slot
-                    # Calculate new deadline based on day and end hour
-                    original_deadline = datetime.strptime(task['deadline'], "%Y-%m-%d %H:%M")
-                    new_deadline = original_deadlin.replace(
-                        hour=task['end_hour_int'], 
-                        minute=0
-                        
-                    )
+        for day_name in ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]:
+            day_index = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"].index(day_name)
+            day_date = start_of_week + timedelta(days=day_index)
+            
+            for slot in optimized_schedule[day_name]:
+                if slot and slot['id'] not in processed_task_ids:
+                    task = slot
+                    processed_task_ids.add(task['id'])
                     
-                    # Update the task in database
-                    conn.execute("""
-                        UPDATE tasks 
-                        SET deadline = ?
-                        WHERE id = ?
-                    """, (new_deadline.strftime("%Y-%m-%d %H:%M"), task['id']))
-                    updated_count += 1
+                    try:
+                        # Create new deadline using the task's end time on the correct date
+                        new_deadline = day_date.replace(
+                            hour=task['end_hour_int'],
+                            minute=task['end_minute_int'],
+                            second=0,
+                            microsecond=0
+                        )
+                        
+                        conn.execute("""
+                            UPDATE tasks 
+                            SET deadline = ?
+                            WHERE id = ?
+                        """, (new_deadline.strftime("%Y-%m-%d %H:%M"), task['id']))
+                        updated_count += 1
+                        
+                    except Exception as e:
+                        print(f"Error saving task {task.get('title', 'Unknown')}: {e}")
         
         conn.commit()
         print(f"💾 Saved {updated_count} optimized tasks to database")
-    # ==================== END OF RESCHEDULE FUNCTIONS ====================
 
+    # ==================== APPLY OPTIMIZATION ====================
+    
+    print("🔄 Starting task optimization...")
+    
     # Apply rescheduling
     optimized_schedule = reschedule_flexible_tasks(tasks)
 
@@ -516,14 +559,26 @@ def optimize_tasks():
     # If no tasks were placed, fall back to original tasks
     if not tasks_for_calendar:
         tasks_for_calendar = tasks
+        print("⚠️ No tasks could be optimized, using original schedule")
+
+    urgent_count = len([t for t in tasks_for_calendar if t['score'] >= 70])
+    important_count = len([t for t in tasks_for_calendar if t['score'] >= 40 and t['score'] < 70])
+    normal_count = len([t for t in tasks_for_calendar if t['score'] >= 10 and t['score'] < 40])
+    unessential_count = len([t for t in tasks_for_calendar if t['score'] < 10])
 
     today = datetime.now()
+    print("✅ Optimization completed successfully!")
+    
     return render_template(
         "Main.html",
         tasks=tasks_for_calendar,
         formatted_date=today.strftime("%B %d, %Y"),
         week_number=today.isocalendar()[1],
-        optimized=True
+        optimized=True,
+        urgent_count=urgent_count,
+        important_count=important_count,
+        normal_count=normal_count,
+        unessential_count=unessential_count
     )
 @app.route('/mark_completed/<int:task_id>', methods=['POST'])
 def mark_completed(task_id):

@@ -12,7 +12,7 @@
     <link rel="stylesheet"
         href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
 
-    <style>
+     <style>
         .logo {
             width: 120px;
             height: 120px;
@@ -21,16 +21,11 @@
 
         html,
         body {
-            height: 110%;
+            height: 100%;
             overflow: auto;
             overscroll-behavior: none;
             font-family: "Poppins", sans-serif;
             background-color: beige;
-        }
-
-        .weekly-header {
-            flex-grow: 1;
-            padding: 20px 0 20px 50px;
         }
 
         .sidebar {
@@ -63,22 +58,6 @@
             text-decoration: none;
         }
 
-        .sidebar-links li a.active {
-            background-color: #0b5ed7;
-        }
-
-        h1 {
-            padding: 20px;
-            text-align: center;
-        }
-
-        .windows-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            width: 240px;
-        }
-
         .btn-success {
             background-color: #4a7d7d !important;
             border-color: #4a7d7d !important;
@@ -93,79 +72,168 @@
             background-color: #f5f0e6;
             flex-grow: 1;
             padding: 20px;
+            overflow: auto;
         }
 
-        /* Task block styles */
+        /* Windows Grid Fix */
         .windows-grid {
             display: grid;
-            grid-template-columns: repeat(2, 180px);
+            grid-template-columns: 1fr 1fr;
             gap: 15px;
-            justify-content: center;
-            align-items: center;
+            width: 100%;
+            margin-bottom: 20px;
         }
 
-        .task-block {
-            cursor: pointer;
-            border: 1px solid transparent;
-            transition: all 0.2s ease-in-out;
-            color: white;
-            padding: 4px 6px;
-            margin-bottom: 4px;
-            border-radius: 4px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            min-height: 30px;
+        .windows-grid .task-block {
+            width: 100%;
+            height: 150px;
             display: flex;
             flex-direction: column;
             justify-content: center;
-        }
-
-        .schedule-grid {
-            display: grid;
-            grid-template-columns: 80px repeat(7, 1fr);
-            grid-template-rows: 50px repeat(32, 30px);
-            gap: 1px;
-            background-color: #ddd;
-            border: 1px solid #ddd;
-            max-height: 700px;
-            overflow-y: auto;
-        }
-
-        .time-column {
-            grid-column: 1;
-            position: sticky;
-            left: 0;
-            background: white;
-            z-index: 10;
-        }
-
-        .day-column {
-            display: contents;
-        }
-
-        .day-label {
-            grid-row: 1;
-            background: #343a40;
-            color: white;
-            padding: 10px;
+            align-items: center;
             text-align: center;
-            font-weight: bold;
+            padding: 15px;
+            border: none;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+
+        .windows-grid .task-block .task-count {
+            font-size: 3.5rem;
+            font-weight: 700;
+            line-height: 1;
+            margin-bottom: 5px;
+        }
+
+        .windows-grid .task-block .task-label {
+            font-size: 0.9rem;
+            font-weight: 500;
+            line-height: 1.2;
+        }
+
+        /* Schedule Grid Fix */
+        .schedule-outer-container {
+            display: flex;
+            align-items: flex-start;
+            gap: 5px;
+            width: 100%;
+        }
+
+        .time-column-standalone {
+            min-width: 80px;
+            max-width: 80px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.05);
+        }
+
+        .time-column-standalone .time-header-sticky {
             position: sticky;
             top: 0;
-            z-index: 5;
+            z-index: 20;
+            padding: 6px 0;
+            text-align: center;
+            font-weight: 600;
+            border-bottom: 1px solid #ccc;
+            background-color: #343a40 !important;
+            color: #fff !important;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
-        .time-label {
+        .time-column-standalone .time-label {
+            height: 60px;
             padding: 5px;
             text-align: center;
             background: #f8f9fa;
             border-bottom: 1px solid #dee2e6;
             font-size: 0.8em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
-        .time-label:nth-child(odd) {
-            background: #e9ecef;
+        .schedule-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            grid-template-rows: 50px repeat(96, 15px);
+            gap: 1px;
+            background-color: #ddd;
+            border: 1px solid #ddd;
+            width: 100%;
+            border-radius: 10px;
+            flex-grow: 1;
+	    position: relative; 
+    	    z-index: 1;
         }
+
+        .day-label {
+            text-align: center;
+            font-weight: 600;
+            padding: 6px 0;
+            border-bottom: 1px solid #ccc;
+            position: sticky;
+            top: 0;
+            z-index: 15;
+            background-color: #343a40;
+            color: white;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .grid-cell {
+            background: white;
+            border-bottom: 1px solid #eee;
+	    position: relative;
+    	    z-index: 1;
+        }
+
+        .task-block,
+        .task-block.Education,
+        .task-block.Work, 
+        .task-block.Personal,
+        .task-block.Health,
+        .task-block.score-critical,
+        .task-block.score-high,
+        .task-block.score-medium,
+        .task-block.score-low {
+            color: white;
+}
+
+        /* Task Blocks */
+        .task-block {
+            cursor: pointer;
+            border: 1px solid transparent;
+            transition: all 0.2s ease-in-out;
+            color: white;
+            padding: 8px 6px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            z-index: 1;
+            margin: 1px;
+            overflow: hidden;
+	        position: relative;
+    	    z-index: 2; 
+    	    margin: 1px 2px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+	
+	.task-block:hover {
+    	    z-index: 3; /* Even higher on hover */
+	}
 
         .task-block.selected {
             border: 2px solid #007bff;
@@ -213,18 +281,6 @@
             cursor: not-allowed;
         }
 
-        .windows-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 15px;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-            max-width: 400px;
-            margin: 0 auto;
-            padding: 10px;
-        }
-
         /* Floating alert */
         .alert {
             position: fixed;
@@ -254,19 +310,25 @@
 
         .overdue-task {
             border: 3px solid #dc3545 !important;
-            background: repeating-linear-gradient(
-                45deg,
-                transparent,
-                transparent 10px,
-                rgba(220, 53, 69, 0.1) 10px,
-                rgba(220, 53, 69, 0.1) 20px
-            ) !important;
+            background: repeating-linear-gradient(45deg,
+                    transparent,
+                    transparent 10px,
+                    rgba(220, 53, 69, 0.1) 10px,
+                    rgba(220, 53, 69, 0.1) 20px) !important;
         }
-        
+
         @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.05);
+            }
+
+            100% {
+                transform: scale(1);
+            }
         }
 
         @keyframes fadeInOut {
@@ -274,11 +336,13 @@
                 opacity: 0;
                 transform: translateY(-10px);
             }
+
             10%,
             90% {
                 opacity: 1;
                 transform: translateY(0);
             }
+
             100% {
                 opacity: 0;
                 transform: translateY(-10px);
@@ -288,7 +352,25 @@
         .pulsing {
             animation: pulse 1s infinite;
         }
+
+        /* Layout fixes */
+        .main-content-wrapper {
+            display: flex;
+            gap: 20px;
+            width: 100%;
+        }
+
+        .left-panel {
+            min-width: 300px;
+            flex-shrink: 0;
+        }
+
+        .right-panel {
+            flex-grow: 1;
+            min-width: 0;
+        }
     </style>
+
 </head>
 
 <body class="bg-beige">
@@ -315,25 +397,27 @@
             <h2>Weekly Tasks</h2>
             <p><strong>{{ formatted_date }}</strong> | Week {{ week_number }}</p>
 
-            <div class="d-flex">
+            <div class="main-content-wrapper">
                 <!-- Left Panel -->
                 <aside class="bg-beige text-dark p-4" style="min-width: 300px;">
                     <h3 class="mt-3">You have...</h3>
                     <hr class="bg-secondary">
-                    <div class="d-flex justify-content-center align-items-center">
-                        <div class="windows-grid text-center">
-                            <div class="task-block score-critical text-white p-4">
-                                {{ urgent_count }} Urgent Task{{ 's' if urgent_count != 1 }}
-                            </div>
-                            <div class="task-block score-high text-white p-4">
-                                {{ important_count }} Important Task{{ 's' if important_count != 1 }}
-                            </div>
-                            <div class="task-block score-medium p-4">
-                                {{ normal_count }} Normal Task{{ 's' if normal_count != 1 }}
-                            </div>
-                            <div class="task-block score-low text-white p-4">
-                                {{ unessential_count }} Unessential Task{{ 's' if unessential_count != 1 }}
-                            </div>
+                    <div class="windows-grid">
+                        <div class="task-block score-critical">
+                            <span class="task-count">{{ urgent_count }}</span>
+                            <span class="task-label">Urgent Task{{ 's' if urgent_count != 1 }}</span>
+                        </div>
+                        <div class="task-block score-high">
+                            <span class="task-count">{{ important_count }}</span>
+                            <span class="task-label">Important Task{{ 's' if important_count != 1 }}</span>
+                        </div>
+                        <div class="task-block score-medium">
+                            <span class="task-count">{{ normal_count }}</span>
+                            <span class="task-label">Normal Task{{ 's' if normal_count != 1 }}</span>
+                        </div>
+                        <div class="task-block score-low">
+                            <span class="task-count">{{ unessential_count }}</span>
+                            <span class="task-label">Unessential Task{{ 's' if unessential_count != 1 }}</span>
                         </div>
                     </div>
 
@@ -350,56 +434,70 @@
                     </div>
                 </aside>
 
-                <!-- Schedule Grid -->
-          <div class="schedule-grid">
+<div class="right-panel">
+<div class="schedule-outer-container">
     <!-- Time Column -->
-    <div class="time-column">
-        <div class="day-label">Time</div>
-        {% for hour in range(6, 22) %}
-        <div class="time-label" style="grid-row: {{ ((hour-6)*2) + 2 }}">{{ "%02d:00"|format(hour) }}</div>
-        <div class="time-label" style="grid-row: {{ ((hour-6)*2) + 3 }}">{{ "%02d:30"|format(hour) }}</div>
+    <div class="time-column-standalone">
+        <div class="day-label bg-dark text-white time-header-sticky">Time</div>
+        {% for i in range(96) %}
+        {% set total_minutes = i * 15 %}
+        {% set hour = 6 + (total_minutes // 60) %}
+        {% set minute = total_minutes % 60 %}
+        {% if minute == 0 %}
+             <div class="time-label">{{ "%02d:00"|format(hour) }}</div>
+        {% endif %}
         {% endfor %}
     </div>
 
-    <!-- Day Columns -->
-    {% set day_columns = {'Monday': 2, 'Tuesday': 3, 'Wednesday': 4, 'Thursday': 5, 'Friday': 6, 'Saturday': 7, 'Sunday': 8} %}
-    
-    {% for day in ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'] %}
-    <div class="day-column" data-day="{{ day }}">
-        <div class="day-label">{{ day }}</div>
+    <!-- Schedule Grid -->
+    <div class="schedule-container flex-grow-1">
+    <div class="schedule-grid">
+        <!-- Day Labels -->
+        {% set day_columns = {'Monday': 1, 'Tuesday': 2, 'Wednesday': 3, 'Thursday': 4, 'Friday': 5, 'Saturday': 6, 'Sunday': 7} %}
         
-        <!-- Grid cells for this day -->
-        {% for hour in range(6, 22) %}
-            {% for half_hour in [0, 30] %}
-            <div class="grid-cell" style="grid-column: {{ day_columns[day] }}; grid-row: {{ ((hour-6)*2) + (2 if half_hour == 0 else 3) }}"></div>
+        {% for day in ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'] %}
+        <div class="day-label" style="grid-column: {{ day_columns[day] }}; grid-row: 1;">{{ day }}</div>
+        {% endfor %}
+
+        <!-- Grid cells -->
+        {% for i in range(96) %}
+            {% set current_grid_row = i + 2 %}
+            {% for day in ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'] %}
+            <div class="grid-cell"
+    style="grid-column: {{ day_columns[day] }}; grid-row: {{ current_grid_row }}">
+    </div>
             {% endfor %}
         {% endfor %}
-        
-        <!-- Tasks for this day -->
+
+        <!-- Tasks -->
         {% for task in tasks %}
-            {% if task.weekday == day %}
-                {% set start_minutes = (task.start_hour_int - 6) * 60 + task.start_hour_str.split(':')[1] | int %}
-                {% set end_minutes = (task.end_hour_int - 6) * 60 + task.end_hour_str.split(':')[1] | int %}
+            {% if task.weekday and task.start_hour_int is defined and task.end_hour_int is defined %}
+                {% set start_minutes = (task.start_hour_int - 6) * 60 + (task.start_hour_str.split(':')[1] | int) %}
+                {% set end_minutes = (task.end_hour_int - 6) * 60 + (task.end_hour_str.split(':')[1] | int) %}
                 {% set duration_minutes = end_minutes - start_minutes %}
-                
+                {% set duration_rows = (duration_minutes + 14) // 15 %}
+                {% set duration_rows = duration_rows if duration_rows > 0 else 1 %}
+                {% set day_col = day_columns[task.weekday] %}
                 <div class="task-block {{ task.category }} 
-                              {% if task.score >= 70 %}score-critical
-                              {% elif task.score >= 40 %}score-high
-                              {% elif task.score >= 10 %}score-medium
-                              {% else %}score-low{% endif %}"
-                              style="grid-column: {{ day_columns[day] }}; grid-row: {{ (start_minutes // 30) + 2 }} / span {{ (duration_minutes + 29) // 30 }};"
-                              data-task-id="{{ task.id }}"
-                              data-title="{{ task.title }}"
-                              data-deadline="{{ task.deadline }}"
-                              data-reminders='{{ task.reminders or [] | tojson | safe }}'
-                              data-score="{{ task.score }}">
-                              <strong>{{ task.title }}</strong><br>
-                              <small>{{ task.start_hour_str }} - {{ task.end_hour_str }}</small>
-                              </div>
-                              {% endif %}
-                           {% endfor %}
+                    {% if task.score >= 70 %}score-critical
+                    {% elif task.score >= 40 %}score-high
+                    {% elif task.score >= 10 %}score-medium
+                    {% else %}score-low{% endif %}"
+                    style="grid-column: {{ day_col }}; grid-row: {{ (start_minutes // 15) + 2 }} / span {{ duration_rows }};"
+                    data-task-id="{{ task.id }}" 
+                    data-title="{{ task.title }}"
+                    data-deadline="{{ task.deadline }}"
+                    data-reminders='{{ task.reminders or [] | tojson | safe }}' 
+                    data-score="{{ task.score }}"
+                    data-start-time="{{ task.start_hour_str }}"
+                    data-end-time="{{ task.end_hour_str }}">
+                    {{ task.title }}
+                </div>
+            {% endif %}
+        {% endfor %}
                       </div>
-                     {% endfor %}
+                    </div>
+                  </div>
                 </div>
             </div>
         </main>
@@ -448,10 +546,13 @@
                 if (selectedBlock) {
                     const title = selectedBlock.dataset.title;
                     const score = selectedBlock.dataset.score;
+                    const startTime = selectedBlock.dataset.startTime;
+                    const endTime = selectedBlock.dataset.endTime;
                     const deadline = new Date(selectedBlock.dataset.deadline).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
                     selectedTaskDetailsContainer.innerHTML = `
                         <h6>Selected Task:</h6>
                         <strong>${title}</strong><br>
+                        <small>Time: ${startTime} - ${endTime}</small><br>
                         <small>Score: ${score}</small><br>
                         <small>Deadline: ${deadline}</small>`;
                 }
@@ -568,4 +669,5 @@
         updateActionButtons();
     </script>
 </body>
+
 </html>
