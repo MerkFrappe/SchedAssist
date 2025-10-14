@@ -1,27 +1,22 @@
-<div class="container-fluid">
-    {% if tasks %}
-        <div class="list-group">
-            {% for task in tasks %}
-                {% set score_class_modifier = "" %}
-                {% if task.score >= 70 %}
-                    {% set score_class_modifier = "list-group-item-danger" %} {# Bootstrap danger #}
-                {% elif task.score >= 40 %}
-                    {% set score_class_modifier = "list-group-item-warning" %} {# Bootstrap warning #}
-                {% elif task.score >= 10 %}
-                    {% set score_class_modifier = "list-group-item-info" %} {# Bootstrap info #}
-                {% else %}
-                    {% set score_class_modifier = "list-group-item-secondary" %} {# Bootstrap secondary #}
-                {% endif %}
-                <div class="list-group-item d-flex justify-content-between align-items-center {{ score_class_modifier }}">
-                    <div>
-                        <h6 class="mb-1">{{ task.title }}</h6>
-                        <small class="text-muted">{{ task.category }} | Deadline: {{ task.deadline }} | Duration: {{ task.duration }} min</small><br>
-                        <small><strong>Score:</strong> {{ "%.2f"|format(task.score) }}</small>
-                    </div>
-                </div>
-            {% endfor %}
-        </div>
+<ul class="hierarchy-list">
+    {% for task in tasks %}
+        <li class="hierarchy-item 
+            {% if task.score >= 70 %}critical
+            {% elif task.score >= 40 %}high
+            {% elif task.score >= 10 %}medium
+            {% else %}low
+            {% endif %}">
+            <div class="task-priority">
+                {{ task.title }}
+            </div>
+            <div class="task-details">
+                📅 {{ task.deadline }} | 
+                ⏱️ {{ task.duration }}min | 
+                🏷️ {{ task.category }} |
+                ⭐ Score: {{ "%.1f"|format(task.score) }}
+            </div>
+        </li>
     {% else %}
-        <p>No uncompleted tasks found.</p>
-    {% endif %}
-</div>
+        <div class="loading">No tasks found</div>
+    {% endfor %}
+</ul>

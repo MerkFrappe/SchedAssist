@@ -184,6 +184,37 @@
                 border-color: #3b6666 !important;
             }
         }
+
+            .btn-clear {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 5px;
+                 cursor: pointer;
+                 margin-left: 10px;
+            }
+
+            .btn-clear:hover {
+             background: #c0392b;
+            }
+
+            .optimized .optimize-section {
+            display: none;
+}
+
+/* Or if you want a smooth transition */
+.optimize-section {
+    transition: all 0.3s ease;
+}
+
+        .optimized .optimize-section {
+    opacity: 0;
+    height: 0;
+    overflow: hidden;
+    margin: 0;
+    padding: 0;
+}
     </style>
     <aside class="sidebar bg-dark text-white p-3">
         <div class="sidebar-header text-center mb-4">
@@ -278,6 +309,9 @@
                     <!-- Submit -->
                     <button class="add-btn custom-btn" type="submit">Add Task</button>
                 </form>
+
+                    <button onclick="clearOptimizeSection()" class="btn-clear"> Clear</button>
+
             </div>
 
             <!-- Right: Task Table -->
@@ -285,7 +319,7 @@
                 style="background-color: white; width: 60%; border-radius: 10px; padding: 20px; display: flex; flex-direction: column;">
                 <h3 style="margin-bottom: 10px;">Task Overview</h3>
                 <table
-                    style="width: 100%; border-collapse: separate; border-spacing: 0; background-color: #f8f8f8; border-radius: 10px; box-shadow: 0 0 0 1px #ccc; margin-bottom: 20px;">
+                    style="optimized optimize-section width: 100%; border-collapse: separate; border-spacing: 0; background-color: #f8f8f8; border-radius: 10px; box-shadow: 0 0 0 1px #ccc; margin-bottom: 20px;">
                     <thead style="background-color: #eaeaea;">
                         <tr>
                             <th style="padding: 12px; text-align: left;">Title</th>
@@ -345,6 +379,15 @@
                 addBtn.disabled = false;
                 addBtn.style.display = "inline-block";
             });
+
+
+            function clearOptimizeSection() {
+                const section = document.querySelector('.optimize-section');
+                section.style.opacity = '0';
+                setTimeout(() => {
+                    section.style.display = 'none';
+                }, 300);
+            }
 
             // Duration change log
             document.getElementById("duration").addEventListener("change", function () {
