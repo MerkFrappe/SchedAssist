@@ -8,9 +8,9 @@ app = Flask(__name__)
 DATABASE = "tasks.db"
 
 
-# -------------------------
-# Database Helper Functions
-# -------------------------
+
+# Database 
+
 def get_db():
     if "db" not in g:
         g.db = sqlite3.connect(DATABASE)
@@ -51,7 +51,7 @@ def init_db():
             db.commit()
             print("✅ Database initialized: tasks.db")
     
-    # Also ensure app_state table exists even if database exists
+    
     else:
         with app.app_context():
             db = get_db()
@@ -99,11 +99,11 @@ def dashboard():
 @app.route("/Main")
 def schedule():
     conn = get_db()
-    # Get the current date
+
     now = datetime.now()
-    # Find the start of the current week (Monday)
+  
     start_of_week = now - timedelta(days=now.weekday())
-    # Find the end of the current week (Sunday)
+ 
     end_of_week = start_of_week + timedelta(days=6, hours=23, minutes=59, seconds=59)
 
     raw_tasks = conn.execute("""
@@ -119,18 +119,16 @@ def schedule():
         try:
             deadline_dt = datetime.strptime(task['deadline'], "%Y-%m-%dT%H:%M" if 'T' in task['deadline'] else "%Y-%m-%d %H:%M") # Handle both formats
             
-            # Calculate start time by subtracting duration from deadline
-            # Duration is in minutes, so convert to timedelta
-            duration_td = timedelta(minutes=task.get('duration', 60)) # Default to 60 minutes if not set
+            
+            duration_td = timedelta(minutes=task.get('duration', 60))
             start_dt = deadline_dt - duration_td #flag
 
-            task['weekday'] = start_dt.strftime('%A') # The day the task *starts*
+            task['weekday'] = start_dt.strftime('%A') 
             task['start_hour_int'] = start_dt.hour
-            task['end_hour_int'] = deadline_dt.hour # The hour the task *ends* (exclusive for display)
+            task['end_hour_int'] = deadline_dt.hour 
             task['start_minute_int'] = start_dt.minute
             task['end_minute_int'] = deadline_dt.minute
-            
-            # For display purposes if needed, though the int versions are better for comparison
+           
             task['start_hour_str'] = start_dt.strftime('%H:%M')
             task['end_hour_str'] = deadline_dt.strftime('%H:%M')
 
@@ -151,7 +149,7 @@ def schedule():
     
     
     formatted_date = now.strftime("%B %d, %Y")
-    # Calculate week number (simple approach, adjust if you need ISO week numbers)
+  
     week_number = now.isocalendar()[1] 
 
     optimized = get_optimization_state()
@@ -172,7 +170,6 @@ def schedule():
 def analytics():
     conn = get_db()
 
-    # Get archived tasks
     archived_tasks = conn.execute("""
         SELECT * FROM tasks
         WHERE isCompleted = 1
@@ -180,10 +177,10 @@ def analytics():
         ORDER BY created_at ASC
     """).fetchall()
 
-    # Convert Row objects → dicts
+  
     archived_tasks = [dict(row) for row in archived_tasks]
 
-    # Get all tasks grouped by category
+   
     category_counts = conn.execute("""
         SELECT category, COUNT(*) AS count
         FROM tasks
@@ -201,7 +198,7 @@ def analytics():
     completed_per_day = [dict(row) for row in completed_per_day]
     category_counts = [dict(row) for row in category_counts]
 
-    # Prepare data for charts
+
     day_labels = [row['date'] for row in completed_per_day]
     day_counts = [row['count'] for row in completed_per_day]
 
@@ -253,7 +250,6 @@ def submit():
     has_reminder = any(r != "none" for r in reminders)
     duration_minutes = hours * 60 + minutes
 
-    # Deadline parsing
     try:
         deadline = datetime.strptime(request.form.get('deadline'), "%Y-%m-%dT%H:%M")
     except ValueError:
@@ -264,7 +260,7 @@ def submit():
 
     urgency_score = 100 if remaining_time <= 0 else min((1 / remaining_time) * 100 + duration_minutes * 0.5, 100)
 
-    # Category weighting
+   
     category = category.capitalize()
     category_weight = 2 if category in ["Education", "Work"] else 1
 
@@ -273,7 +269,6 @@ def submit():
     reminder_value_total = sum(val for _, val in valid_reminders)
     importance = category_weight * reminder_value_total
 
-    # Flexibility - FIXED THIS PART
     task_type = request.form.get('task_type', 'uninterrupted')
     is_flexible = 1 if task_type == 'flexible' else 0
     flexibility_weight = 1.0 if is_flexible else 1.2
@@ -579,6 +574,7 @@ def optimize_tasks():
         normal_count=normal_count,
         unessential_count=unessential_count
     )
+
 @app.route('/mark_completed/<int:task_id>', methods=['POST'])
 def mark_completed(task_id):
     conn = get_db()
@@ -618,3 +614,5 @@ def get_task_hierarchy_modal_content():
 if __name__ == "__main__":
     init_db()
     app.run(debug=True)
+
+    app.run(host='localhost', port=80, debug=True)

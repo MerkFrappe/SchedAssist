@@ -147,7 +147,7 @@
         }
 
         .time-column-standalone .time-label {
-            height: 30px; /* Changed to match 30-minute slot height */
+            height: 31px; /* Changed to match 30-minute slot height */
             padding: 5px;
             text-align: center;
             background: #f8f9fa;
@@ -164,7 +164,7 @@
             grid-template-rows: 50px repeat(32, 30px); /* 1 header row + 32 slots * 30px height */
             gap: 1px;
             background-color: #ddd;
-            border: 1px solid #ddd;
+            border: 0px solid #ddd;
             width: 100%;
             border-radius: 0px 10px 0px 0px;
             flex-grow: 1;
@@ -248,34 +248,18 @@
             z-index: 10;
         }
 
-        .task-block.Education {
-            background-color: #4a7d7d;
-        }
-
-        .task-block.Work {
-            background-color: #dc3545;
-        }
-
-        .task-block.Personal {
-            background-color: #ffc107;
-            color: #333;
-        }
-
-        .task-block.Health {
-            background-color: #198754;
-        }
 
         .task-block.score-critical {
             background-color: #dc3545;
         }
 
         .task-block.score-high {
-            background-color: #ffc107;
-            color: #333;
+            background-color: #fd7e14;
+          
         }
 
         .task-block.score-medium {
-            background-color: #fd7e14;
+            background-color: #ffc107;
         }
 
         .task-block.score-low {
@@ -458,7 +442,7 @@
                         </div>
                     </div>
 
-                    <div class="bg-dark text-light p-4 mt-3" style="min-width: 250px; max-width: 300px;"> <!-- Adjusted width -->
+                    <div class="bg-dark text-light p-4 mt-4" style="min-width: 300px; max-width: 300px; justify-content: center;"> <!-- Adjusted width -->
                         <h6>Weekly Actions</h6>
                         <button id="taskHierarchyBtn" class="btn btn-success mt-3 w-100" data-bs-toggle="modal"
                             data-bs-target="#taskHierarchyModal">Task Hierarchy</button>
@@ -554,7 +538,7 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
+  <script>
 
         document.addEventListener('DOMContentLoaded', () => {
             const tasks = document.querySelectorAll('.task-block');
@@ -644,7 +628,8 @@
                             task.classList.add('pulsing');
                         }, delay);
                     }
-                });
+               
+             });        
             
 
             function updateTaskUrgency() {
@@ -672,28 +657,12 @@
 
             updateTaskUrgency();
             setInterval(updateTaskUrgency, 60000);
-        });
+       
+        
 
+      
         // Action buttons
-        markCompletedBtn.addEventListener('click', async () => {
-            if (selectedTaskId && confirm('Mark this task as completed?')) {
-                const response = await fetch(`/mark_completed/${selectedTaskId}`, { method: 'POST' });
-                if (response.ok) {
-                    showAlert('✅ Task marked as completed!');
-                    window.location.reload();
-                } else showAlert('❌ Failed to mark task as completed.');
-            }
-        });
-
-        deleteTaskBtn.addEventListener('click', async () => {
-            if (selectedTaskId && confirm('Delete this task? This cannot be undone!')) {
-                const response = await fetch(`/delete_task/${selectedTaskId}`, { method: 'POST' });
-                if (response.ok) {
-                    showAlert('🗑️ Task deleted!');
-                    window.location.reload();
-                } else showAlert('❌ Failed to delete task.');
-            }
-        });
+       
 
         document.getElementById('taskHierarchyBtn').addEventListener('click', async () => {
             taskHierarchyModalBody.innerHTML = 'Loading tasks...';
@@ -704,10 +673,33 @@
                 taskHierarchyModalBody.innerHTML = '<p class="text-danger">An error occurred.</p>';
             }
         });
-
-        updateActionButtons();
+            deleteTaskBtn.addEventListener('click', async () => {
+            if (selectedTaskId && confirm('Delete this task? This cannot be undone!')) {
+                const response = await fetch(`/delete_task/${selectedTaskId}`, { method: 'POST' });
+                if (response.ok) {
+                    showAlert('🗑️ Task deleted!');
+                    window.location.reload();
+                } else showAlert('❌ Failed to delete task.');
+            }
         });
+
+        markCompletedBtn.addEventListener('click', async () => {
+            if (selectedTaskId && confirm('Mark this task as completed?')) {
+                const response = await fetch(`/mark_completed/${selectedTaskId}`, { method: 'POST' });
+                if (response.ok) {
+                    showAlert('✅ Task marked as completed!');
+                    window.location.reload();
+                } else showAlert('❌ Failed to mark task as completed.');
+            }
+        });
+             });
+        updateActionButtons();
+       
+                     
+              });
     </script>
+
+
 </body>
 
 </html>

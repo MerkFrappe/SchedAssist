@@ -162,6 +162,15 @@
             border-color: #3b6666 !important;
         }
 
+    
+        
+        #task_type {
+        padding: 10px 16px; /* Inside space */
+        margin: 15px 0; /* Outside space, top and bottom */
+        border-radius: 6px; /* Rounded corners */
+        font-size: 1rem; /* Easier to read */
+        }
+
         @media (max-width: 768px) {
             .content {
                 flex-direction: column;
@@ -185,40 +194,40 @@
             }
         }
 
-            .btn-clear {
+        .btn-clear {
             background: #e74c3c;
             color: white;
             border: none;
             padding: 8px 12px;
             border-radius: 5px;
-                 cursor: pointer;
-                 margin-left: 10px;
-            }
+            cursor: pointer;
+            margin-left: 10px;
+        }
 
-            .btn-clear:hover {
-             background: #c0392b;
-            }
-
-            .optimized .optimize-section {
-            display: none;
-}
-
-/* Or if you want a smooth transition */
-.optimize-section {
-    transition: all 0.3s ease;
-}
+        .btn-clear:hover {
+            background: #c0392b;
+        }
 
         .optimized .optimize-section {
-    opacity: 0;
-    height: 0;
-    overflow: hidden;
-    margin: 0;
-    padding: 0;
-}
+            display: none;
+        }
+
+        /* Or if you want a smooth transition */
+        .optimize-section {
+            transition: all 0.3s ease;
+        }
+
+        .optimized .optimize-section {
+            opacity: 0;
+            height: 0;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+        }
     </style>
     <aside class="sidebar bg-dark text-white p-3">
         <div class="sidebar-header text-center mb-4">
-             <img src="{{ url_for('static', filename='icon/Icon.png') }}" alt="SchedAssist logo" class="logo">
+            <img src="{{ url_for('static', filename='icon/Icon.png') }}" alt="SchedAssist logo" class="logo">
             <h2 class="h5">SchedAssistant</h2>
         </div>
         <ul class="list-unstyled sidebar-links">
@@ -256,7 +265,7 @@
                         </div>
 
                         <!-- Flexible checkbox -->
-                        <select name="task_type p-3" id="task_type">
+                        <select name="task_type" id="task_type">
                              <option value="uninterrupted">Uninterrupted (Fixed Time)</option>
                                 <option value="flexible">Flexible (Can be moved)</option>
                         </select>
@@ -349,7 +358,7 @@
                     </tbody>
                 </table>
                 <form action="{{ url_for('optimize_tasks') }}" method="POST">
-                    <button type="submit" class="btn btn-primary">Optimize Tasks</button>
+                    <button type="submit" class="optimize-btn">Optimize Tasks</button>
                 </form>
             </div>
         </div>

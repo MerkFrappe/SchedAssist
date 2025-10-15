@@ -1,0 +1,54 @@
+<div class="table-responsive">
+    <table class="table table-hover table-striped">
+        <thead class="table-dark sticky-top">
+            <tr>
+                <th>Title</th>
+                <th>Category</th>
+                <th>Score</th>
+                <th>Deadline</th>
+                <th>Duration (min)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for task in tasks %}
+            <tr class="
+                {% if task.score >= 70 %}table-danger
+                {% elif task.score >= 40 %}table-warning
+                {% elif task.score >= 10 %}table-info
+                {% else %}table-success{% endif %}
+            ">
+                <td>{{ task.title }}</td>
+                <td>{{ task.category }}</td>
+                <td>{{ task.score }}</td>
+                <td>{{ task.deadline }}</td>
+                <td>{{ task.duration }}</td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="5" class="text-center text-muted">
+                    🎉 You have no outstanding tasks!
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<style>
+    /* Custom styling for the modal body content */
+    .table-danger, .table-warning {
+        font-weight: 600;
+    }
+    .table-danger { background-color: #f8d7da !important; } /* Critical */
+    .table-warning { background-color: #fff3cd !important; } /* High */
+    .table-info { background-color: #cff4fc !important; }    /* Medium */
+    .table-success { background-color: #d1e7dd !important; } /* Low/Unessential */
+
+    /* Ensure table header sticks while scrolling */
+    .sticky-top {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        box-shadow: 0 2px 2px rgba(0,0,0,0.1);
+    }
+</style>
