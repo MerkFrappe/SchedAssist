@@ -7,7 +7,7 @@
     <title>Analytics - SchedAssistant</title>
     <!-- Bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Google Icons -->
+    <!-- Google Icons -->a
     <link rel="stylesheet"
         href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
 
@@ -91,15 +91,7 @@
             background-color: #0b5ed7;
         }
 
-        #completedTasksChart {
-            width: 100% !important;
-            height: auto !important;
-        }
-
-        #taskCategoryChart {
-            width: 350px !important;
-            height: 320px !important;
-        }
+  overflow: auto;
 
     </style>
     <!-- Chart.js -->
@@ -107,14 +99,13 @@
 	</head>
 
 	<body class="bg-beige">
-
-    <div class="d-flex">
-        <!-- Sidebar -->
-        <aside class="sidebar bg-dark text-white p-3">
-            <div class="sidebar-header text-center mb-4">
-                 <img src="{{ url_for('static', filename='icon/Icon.png') }}"
-     alt="SchedAssist logo" class="logo"
-     onerror="this.src='{{ url_for('static', filename='icon/Icon-fallback.png') }}'">
+   		 <div class="d-flex">
+    		    <!-- Sidebar -->
+    		    <aside class="sidebar bg-dark text-white p-3">
+        	    <div class="sidebar-header text-center mb-4">
+         	        <img src="{{ url_for('static', filename='icon/Icon.png') }}"
+     			alt="SchedAssist logo" class="logo"
+    			 onerror="this.src='{{ url_for('static', filename='icon/Icon-fallback.png') }}'">
                 <h2 class="h5">SchedAssistant</h2>
             </div>
             <ul class="list-unstyled sidebar-links">
@@ -135,7 +126,7 @@
         <!-- Main Content -->
         <main class="flex-grow-1 p-4">
             <h2>Analytics</h2>
-            <p><strong>August 9, 2025</strong> | Second Week</p>
+            <p><strong>{{ formatted_date }}</strong> |  Week {{ week_number }}</p>
 
 
             <!-- Completed Tasks Graph -->
@@ -152,8 +143,10 @@
                     <!-- Archived Tasks -->
                     <div class="card mb-4">
                         <div class="card-header">Archived Tasks</div>
-                        <div class="card-body">
-                            <table class="table table-striped">
+                        <div class="card-body p-0">
+                            <div style="max-height: 400px; overflow: auto;">
+                                <table class="table table-striped mb-0" style="min-width: 100%;">
+                                    <thead style="position: sticky; top: 0; background: white; z-index: 10;">
                                 <thead>
                                     <tr>
                                         <th>Category</th>
@@ -162,27 +155,18 @@
                                         <th>Time</th>
                                     </tr>
                                 </thead>
-                                <tbody>
-                                    <tr>
-                                        <td>Education</td>
-                                        <td>RS Assignment</td>
-                                        <td>08/08/2025</td>
-                                        <td>07:00 - 08:00 AM</td>
-                                    </tr>
-                                    <tr>
-                                        <td>Education</td>
-                                        <td>Outline Defense</td>
-                                        <td>08/09/2025</td>
-                                        <td>10:00 - 12:00 AM</td>
-                                    </tr>
-                                    <tr>
-                                        <td>Personal</td>
-                                        <td>Chess</td>
-                                        <td>08/10/2025</td>
-                                        <td>6:00 - 7:00 AM</td>
-                                    </tr>
-                                </tbody>
+                               <tbody>
+  				{% for task in archived_tasks %}
+ 				 <tr>
+ 				   <td>{{ task.category }}</td>
+ 				   <td>{{ task.title }}</td>
+  				   <td>{{ task.deadline.split()[0] }}</td>
+    				   <td>{{ task.deadline.split()[1] }}</td>
+ 				   </tr>
+ 				 {% endfor %}
+				</tbody>
                             </table>
+                        </div>
                         </div>
                     </div>
                 </div>
@@ -196,7 +180,7 @@
                             <div class="card text-center mb-4">
                                 <div class="card-body">
                                     <h6>Tasks Completed (Day)</h6>
-                                    <h2>3</h2>
+                                    <h2>{{ tasks_today }}</h2>
                                 </div>
                             </div>
                         </div>
@@ -205,7 +189,7 @@
                             <div class="card text-center mb-4">
                                 <div class="card-body">
                                     <h6>Tasks Completed (Week)</h6>
-                                    <h2>12</h2>
+                                    <h2>{{ tasks_this_week }}</h2>
                                 </div>
                             </div>
                         </div>
@@ -224,56 +208,72 @@
     </div>
 
     <!-- Chart.js Scripts -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-      // Line Chart
-      const ctx1 = document.getElementById('completedTasksChart')?.getContext('2d');
-      if (ctx1) {
-        new Chart(ctx1, {
-          type: 'line',
-          data: {
-            labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
-            datasets: [{
-              label: 'Completed Tasks',
-              data: [1, 0, 2, 0, 3],
-              borderColor: '#ff4d4f',
-              backgroundColor: 'rgba(255, 77, 79, 0.2)',
-              pointBackgroundColor: ['#ff4d4f', '#ffc107', '#007bff', '#28a745', '#6f42c1'],
-              pointRadius: 8,
-              pointHoverRadius: 8,
-              fill: true,
-              tension: 0.3
-            }]
-          },
-          options: {
-            responsive: true,
-            interaction: {
-              mode: 'index',
-              intersect: false
-            },
-            plugins: {
-              legend: { display: true }
-            }
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script type="text/javascript">
+  // Flask → JS data bridge
+  const archivedTasks = {{ archived_tasks | default([]) | tojson | safe }};
+  const dayLabels = {{ day_labels | tojson | safe }};
+  const dayCounts = {{ day_counts | tojson | safe }};
+  const categoryLabels = {{ category_labels | tojson | safe }};
+  const categoryCounts = {{ counts | tojson | safe }};
+
+  console.log(archivedTasks, categoryLabels, categoryCounts);
+
+  document.addEventListener('DOMContentLoaded', function () {
+    const ctx1 = document.getElementById('completedTasksChart')?.getContext('2d');
+    const ctx2 = document.getElementById('taskCategoryChart')?.getContext('2d');
+
+    // Chart 1: Completed Tasks (Line Chart)
+    if (ctx1 && Array.isArray(dayLabels) && Array.isArray(dayCounts)) {
+      new Chart(ctx1, {
+        type: 'line',
+        data: {
+          labels: dayLabels,
+          datasets: [{
+            label: 'Completed Tasks',
+            data: dayCounts,
+            borderColor: '#ff4d4f',
+            backgroundColor: 'rgba(255, 77, 79, 0.2)',
+            fill: true,
+            tension: 0.3
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            x: { title: { display: true, text: 'Date' }},
+            y: { title: { display: true, text: 'Tasks Completed' }, beginAtZero: true, ticks: { precision: 0 } }
           }
-        });
-      }
-    
-      // Pie Chart
-      const ctx2 = document.getElementById('taskCategoryChart')?.getContext('2d');
-      if (ctx2) {
-        new Chart(ctx2, {
-          type: 'pie',
-          data: {
-            labels: ['Education', 'Work', 'Personal'],
-            datasets: [{
-              label: 'Task Distribution',
-              data: [2, 1, 1],
-              backgroundColor: ['#007bff', '#dc3545', '#ffc107']
-            }]
+        }
+      });
+    }
+
+    // Chart 2: Task Categories (Pie Chart)
+    if (ctx2 && Array.isArray(categoryLabels) && Array.isArray(categoryCounts)) {
+      new Chart(ctx2, {
+        type: 'pie',
+        data: {
+          labels: categoryLabels,
+          datasets: [{
+            data: categoryCounts,
+            backgroundColor: ['#007bff', '#dc3545', '#ffc107', '#198754', '#6f42c1']
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { display: true, position: 'right' },
+            tooltip: { enabled: true }
           }
-        });
-      }
-    });
-    </script>
+        }
+      });
+    }
+  });
+
+</script>
+</body>
+</html>

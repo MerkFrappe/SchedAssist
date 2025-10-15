@@ -1,0 +1,24 @@
+10/10/2025
+
+- Created a sample machine learning tool
+- Semi functional placement of tasks (need to fix)
+- made analyitics more real time
+
+11/10/2025
+- Mark Completed (DONE)
+- fix analytics
+- fix the placement of tasks in Main.html (DONE)
+- Task Hierarchy.
+
+{% for task in tasks %}
+  <div class="task-block" 
+       data-task-id="{{ task.id }}" 
+       data-task-title="{{ task.title }}">
+    <h5>{{ task.title }}</h5>
+    <p>Category: {{ task.category }}</p>
+    <p>Deadline: {{ task.deadline }}</p>
+    <p>Score: {{ task.score }}</p>
+  </div>
+{% endfor %}
+
+for later
