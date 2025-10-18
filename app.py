@@ -1,12 +1,20 @@
 from math import ceil
+from models.ml_service import MLService
 from flask import Flask, jsonify, render_template, request, redirect, url_for, g
 from datetime import datetime, timedelta
 import sqlite3
 import os
+import threading
+import time
+
 
 app = Flask(__name__)
 DATABASE = "tasks.db"
 
+absolute_db_path = os.path.abspath(DATABASE)
+print(f"--- DEBUG: Flask is trying to use database at: {absolute_db_path} ---")
+
+ml_service_instance = MLService(db_path=DATABASE) 
 
 # -------------------------
 # Database Helper Functions
@@ -14,7 +22,7 @@ DATABASE = "tasks.db"
 def get_db():
     if "db" not in g:
         g.db = sqlite3.connect(DATABASE)
-        g.db.row_factory = sqlite3.Row  # allows dict-like access
+        g.db.row_factory = sqlite3.Row
     return g.db
 
 @app.teardown_appcontext
@@ -24,46 +32,56 @@ def close_db(exception):
         db.close()
 
 def init_db():
-    """Creates the database if not exists"""
-    if not os.path.exists(DATABASE):
-        with app.app_context():
-            db = get_db()
-            db.execute("""
-                CREATE TABLE IF NOT EXISTS tasks (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    title TEXT NOT NULL,
-                    deadline TEXT NOT NULL,
-                    duration INTEGER,
-                    is_flexible INTEGER,
-                    reminders TEXT,
-                    category TEXT,
-                    score REAL,
-                    isCompleted INTEGER DEFAULT 0,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            """)
-            db.execute("""
-                CREATE TABLE IF NOT EXISTS app_state (
-                    id TEXT PRIMARY KEY,
-                    value TEXT
-                )
-            """)
-            db.commit()
-            print("✅ Database initialized: tasks.db")
-    
-    # Also ensure app_state table exists even if database exists
-    else:
-        with app.app_context():
-            db = get_db()
-            db.execute("""
-                CREATE TABLE IF NOT EXISTS app_state (
-                    id TEXT PRIMARY KEY,
-                    value TEXT
-                )
-            """)
-            db.commit()
-            print("✅ Ensured app_state table exists")
-    
+    with app.app_context():
+        db = get_db()
+        # Create tables if they don't exist
+        db.execute("""
+            CREATE TABLE IF NOT EXISTS tasks (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                title TEXT NOT NULL,
+                deadline TEXT NOT NULL,
+                duration INTEGER,
+                is_flexible INTEGER,
+                reminders TEXT,
+                category TEXT,
+                score REAL,
+                isCompleted INTEGER DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        db.execute("""
+            CREATE TABLE IF NOT EXISTS app_state (
+                id TEXT PRIMARY KEY,
+                value TEXT
+            )
+        """)
+        db.execute("""
+            CREATE TABLE IF NOT EXISTS ml_weights (
+                weight_name TEXT PRIMARY KEY,
+                weight_value REAL,
+                confidence REAL DEFAULT 1.0,
+                last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        
+        # Insert default weights if they don't exist
+        db.execute("""
+            INSERT OR IGNORE INTO ml_weights VALUES 
+                ('urgency_weight', 0.35, 1.0, CURRENT_TIMESTAMP),
+                ('importance_weight', 0.7, 1.0, CURRENT_TIMESTAMP),
+                ('flexibility_weight', 1.0, 1.0, CURRENT_TIMESTAMP),
+                ('category_Work', 2.0, 1.0, CURRENT_TIMESTAMP),
+                ('category_Education', 2.0, 1.0, CURRENT_TIMESTAMP),
+                ('category_other', 1.0, 1.0, CURRENT_TIMESTAMP)
+        """)
+        
+        db.commit()
+        print("✅ Database initialized: tasks.db")
+        
+        # Verify and fix schema
+        verify_and_fix_schema()
+
+
 def get_optimization_state():
     """Check if optimization has been applied"""
     conn = get_db()
@@ -78,8 +96,156 @@ def set_optimization_state(optimized):
         VALUES ('optimized', ?)
     """, ('true' if optimized else 'false',))
     conn.commit()
+
+def get_ml_weights():
+    """Get current ML weights"""
+    conn = get_db()
+    weights = conn.execute("SELECT weight_name, weight_value FROM ml_weights").fetchall()
+    return {row['weight_name']: row['weight_value'] for row in weights}
+
+def update_ml_weights(new_weights):
+    """Update ML weights (called by weekly ML job)"""
+    conn = get_db()
+    for weight_name, weight_value in new_weights.items():
+        conn.execute("""
+            UPDATE ml_weights 
+            SET weight_value = ?, last_updated = CURRENT_TIMESTAMP
+            WHERE weight_name = ?
+        """, (weight_value, weight_name))
+    conn.commit()
+    print("✅ ML weights updated")
+
+def verify_and_fix_schema():
+    """Verify and fix any schema inconsistencies"""
+    conn = get_db()
+    
+    try:
+        # Check if isCompleted column exists
+        columns = conn.execute("PRAGMA table_info(tasks)").fetchall()
+        column_names = [col[1] for col in columns]
+        print("📋 Current task table columns:", column_names)
+        
+        # Fix isCompleted column if it doesn't exist
+        if 'isCompleted' not in column_names:
+            print("🔄 Adding missing isCompleted column...")
+            conn.execute("ALTER TABLE tasks ADD COLUMN isCompleted INTEGER DEFAULT 0")
+            conn.commit()
+            print("✅ Added isCompleted column")
+            
+            # Update any existing tasks to have default value
+            conn.execute("UPDATE tasks SET isCompleted = 0 WHERE isCompleted IS NULL")
+            conn.commit()
+            
+    except Exception as e:
+        print(f"❌ Error verifying schema: {e}")
+
+
+def get_unified_notifications():
+    """Get all notifications: reminders + urgency changes"""
+    conn = get_db()
+    now = datetime.now()
+    notifications = []
+    
+    # First, let's verify the table structure
+    try:
+        # Test query to check column names
+        test_columns = conn.execute("PRAGMA table_info(tasks)").fetchall()
+        column_names = [col[1] for col in test_columns]
+        print("🔍 Task table columns:", column_names)
+        
+        # Use the correct column name (adjust based on what we find)
+        completed_column = 'isCompleted'
+        if 'isCompleted' not in column_names and 'iscompleted' in column_names:
+            completed_column = 'iscompleted'
+        elif 'isCompleted' not in column_names and 'completed' in column_names:
+            completed_column = 'completed'
+        
+        print(f"🔧 Using column name: {completed_column}")
+        
+        # 1. Get upcoming reminders (due in next 15 minutes)
+        reminder_threshold = now + timedelta(minutes=15)
+        reminders = conn.execute(f"""
+            SELECT id, title, deadline, reminders
+            FROM tasks 
+            WHERE {completed_column} = 0 
+            AND deadline BETWEEN ? AND ?
+        """, (now, reminder_threshold)).fetchall()
+        
+        for task in reminders:
+            notifications.append({
+                'type': 'reminder',
+                'task_id': task['id'],
+                'title': task['title'],
+                'message': f"Due soon: {task['title']}",
+                'priority': 'medium',
+                'deadline': task['deadline']
+            })
+        
+        # 2. Get urgent tasks (due in next 1 hour)
+        urgent_threshold = now + timedelta(hours=1)
+        urgent_tasks = conn.execute(f"""
+            SELECT id, title, deadline, score
+            FROM tasks 
+            WHERE {completed_column} = 0 
+            AND deadline BETWEEN ? AND ?
+            AND score >= 70
+        """, (now, urgent_threshold)).fetchall()
+        
+        for task in urgent_tasks:
+            notifications.append({
+                'type': 'urgency',
+                'task_id': task['id'],
+                'title': task['title'],
+                'message': f"URGENT: {task['title']}",
+                'priority': 'high',
+                'deadline': task['deadline'],
+                'score': task['score']
+            })
+        
+        # 3. Get overdue tasks
+        overdue_tasks = conn.execute(f"""
+            SELECT id, title, deadline
+            FROM tasks 
+            WHERE {completed_column} = 0 
+            AND deadline < ?
+        """, (now,)).fetchall()
+        
+        for task in overdue_tasks:
+            notifications.append({
+                'type': 'overdue',
+                'task_id': task['id'],
+                'title': task['title'],
+                'message': f"OVERDUE: {task['title']}",
+                'priority': 'critical',
+                'deadline': task['deadline']
+            })
+        
+    except Exception as e:
+        print(f"❌ Error in get_unified_notifications: {e}")
+        # Fallback to basic query without isCompleted filter
+        try:
+            urgent_tasks = conn.execute("""
+                SELECT id, title, deadline
+                FROM tasks 
+                WHERE deadline < ?
+            """, (now,)).fetchall()
+            
+            for task in urgent_tasks:
+                notifications.append({
+                    'type': 'overdue',
+                    'task_id': task['id'],
+                    'title': task['title'],
+                    'message': f"OVERDUE: {task['title']}",
+                    'priority': 'critical',
+                    'deadline': task['deadline']
+                })
+        except Exception as e2:
+            print(f"❌ Even fallback query failed: {e2}")
+    
+    return notifications
+
 # -------------------------
-# Routes
+# Routes - REMOVE ALL conn.close() calls!
 # -------------------------
 @app.route("/")
 def home():
@@ -88,13 +254,27 @@ def home():
 @app.route("/dashboard")
 def dashboard():
     conn = get_db()
+    
+    # Debug: print what we're getting from database
+    print("🔄 Fetching tasks for dashboard...")
+    
+    # MODIFIED: Filter for incomplete tasks
     tasks = conn.execute("""
         SELECT * FROM tasks
+        WHERE isCompleted = 0
         ORDER BY score DESC
     """).fetchall()
-    conn.close()
+    
+    print(f"📊 Found {len(tasks)} tasks in database")
+    
     tasks = [dict(row) for row in tasks]
+    
+    # Debug print first few tasks
+    for i, task in enumerate(tasks[:3]):
+        print(f"  Task {i+1}: '{task.get('title', 'No title')}' - Score: {task.get('score', 'No score')}")
+    
     return render_template("dashboard.html", tasks=tasks, optimized=False)
+
 
 @app.route("/Main")
 def schedule():
@@ -109,7 +289,8 @@ def schedule():
     raw_tasks = conn.execute("""
     SELECT id, title, category, deadline, reminders, score, created_at, duration
     FROM tasks
-    WHERE deadline BETWEEN ? AND ?
+    WHERE isCompleted = 0  -- MODIFIED: Filter for incomplete tasks
+    AND deadline BETWEEN ? AND ?
     ORDER BY deadline ASC
     """, (start_of_week.strftime("%Y-%m-%d %H:%M"), end_of_week.strftime("%Y-%m-%d %H:%M"))).fetchall()
 
@@ -117,20 +298,16 @@ def schedule():
     for row in raw_tasks:
         task = dict(row)
         try:
-            deadline_dt = datetime.strptime(task['deadline'], "%Y-%m-%dT%H:%M" if 'T' in task['deadline'] else "%Y-%m-%d %H:%M") # Handle both formats
+            deadline_dt = datetime.strptime(task['deadline'], "%Y-%m-%dT%H:%M" if 'T' in task['deadline'] else "%Y-%m-%d %H:%M")
             
-            # Calculate start time by subtracting duration from deadline
-            # Duration is in minutes, so convert to timedelta
-            duration_td = timedelta(minutes=task.get('duration', 60)) # Default to 60 minutes if not set
-            start_dt = deadline_dt - duration_td #flag
+            duration_td = timedelta(minutes=task.get('duration', 60))
+            start_dt = deadline_dt - duration_td
 
-            task['weekday'] = start_dt.strftime('%A') # The day the task *starts*
+            task['weekday'] = start_dt.strftime('%A')
             task['start_hour_int'] = start_dt.hour
-            task['end_hour_int'] = deadline_dt.hour # The hour the task *ends* (exclusive for display)
+            task['end_hour_int'] = deadline_dt.hour
             task['start_minute_int'] = start_dt.minute
             task['end_minute_int'] = deadline_dt.minute
-            
-            # For display purposes if needed, though the int versions are better for comparison
             task['start_hour_str'] = start_dt.strftime('%H:%M')
             task['end_hour_str'] = deadline_dt.strftime('%H:%M')
 
@@ -138,8 +315,6 @@ def schedule():
                 task['reminders'] = []
 
             tasks_for_calendar.append(task)
-
-
 
         except Exception as e:
             print(f"Error parsing deadline for task {task.get('id', 'N/A')}: {task['deadline']} → {e}")
@@ -149,24 +324,25 @@ def schedule():
     normal_count = len([t for t in tasks_for_calendar if t['score'] >= 10 and t['score'] < 40])
     unessential_count = len([t for t in tasks_for_calendar if t['score'] < 10])        
     
-    
     formatted_date = now.strftime("%B %d, %Y")
-    # Calculate week number (simple approach, adjust if you need ISO week numbers)
     week_number = now.isocalendar()[1] 
 
     optimized = get_optimization_state()
 
-    
-    return render_template("Main.html",
-    formatted_date=formatted_date,
-    week_number=week_number, 
-    optimized=optimized,     
-    tasks=tasks_for_calendar,
-    urgent_count=urgent_count,
-    important_count=important_count,
-    normal_count=normal_count,
-    unessential_count=unessential_count,)
+    advice_text = generate_advice_from_weights()
 
+
+    return render_template("Main.html",
+        formatted_date=formatted_date,
+        week_number=week_number, 
+        optimized=optimized,     
+        tasks=tasks_for_calendar,
+        urgent_count=urgent_count,
+        important_count=important_count,
+        normal_count=normal_count,
+        unessential_count=unessential_count,
+        advice_text=advice_text 
+        )
 
 @app.route("/Analytics")
 def analytics():
@@ -198,6 +374,7 @@ def analytics():
         GROUP BY DATE(created_at)
         ORDER BY DATE(created_at) ASC
     """).fetchall()
+
     completed_per_day = [dict(row) for row in completed_per_day]
     category_counts = [dict(row) for row in category_counts]
 
@@ -216,9 +393,13 @@ def analytics():
     formatted_date = today.strftime("%B %d, %Y")
     week_number = today.isocalendar()[1]
 
+    analytics_summary = generate_analytics_summary()
+    weights = get_ml_weights()
+
+
     return render_template(
         "Analytics.html",
-         archived_tasks=archived_tasks,
+        archived_tasks=archived_tasks,
         category_labels=labels,
         counts=counts,
         day_labels=day_labels,
@@ -226,11 +407,11 @@ def analytics():
         tasks_today=tasks_today,
         tasks_this_week=tasks_this_week,
         formatted_date=formatted_date, 
-        week_number=week_number
+        week_number=week_number,
+        analytics_summary=analytics_summary
+        weights=weights
+
     )
-
-
-
 
 @app.route('/submit', methods=['POST'])
 def submit():
@@ -255,33 +436,44 @@ def submit():
 
     # Deadline parsing
     try:
-        deadline = datetime.strptime(request.form.get('deadline'), "%Y-%m-%dT%H:%M")
+        deadline_str = request.form.get('deadline')
+        deadline = datetime.strptime(deadline_str, "%Y-%m-%dT%H:%M")
     except ValueError:
         return "Invalid date or time format.", 400
 
-    now = datetime.now()
-    remaining_time = (deadline - now).total_seconds() / 60
-
-    urgency_score = 100 if remaining_time <= 0 else min((1 / remaining_time) * 100 + duration_minutes * 0.5, 100)
-
-    # Category weighting
-    category = category.capitalize()
-    category_weight = 2 if category in ["Education", "Work"] else 1
-
-    # Reminder scoring
-    valid_reminders = [reminder_offsets[r] for r in reminders if r in reminder_offsets]
-    reminder_value_total = sum(val for _, val in valid_reminders)
-    importance = category_weight * reminder_value_total
-
-    # Flexibility - FIXED THIS PART
     task_type = request.form.get('task_type', 'uninterrupted')
     is_flexible = 1 if task_type == 'flexible' else 0
-    flexibility_weight = 1.0 if is_flexible else 1.2
 
-    # Final priority score
-    score = (urgency_score * 0.35) + (importance * 0.7) * flexibility_weight
+    task_data_for_ml = {
+        'deadline': deadline_str,
+        'duration': duration_minutes,
+        'is_flexible': is_flexible,
+        'category': category
+    }
+    print(f"🔍 DEBUG: Task data for ML prediction: {task_data_for_ml}")
 
-    # Insert into database - DEBUG OUTPUT
+    try:
+        # Predict the priority score using the ML service
+        score = ml_service_instance.predict_priority(task_data_for_ml)
+        print(f"🎯 DEBUG: ML predicted score for '{title}': {score:.2f}")
+    except ValueError as e:
+        print(f"⚠️ ERROR: ML model not trained, falling back to default score. {e}")
+        # Fallback to a default scoring if ML model isn't ready
+        now = datetime.now()
+        remaining_time = (deadline - now).total_seconds() / 60
+        urgency_score = 100 if remaining_time <= 0 else min((1 / remaining_time) * 100 + duration_minutes * 0.5, 100)
+        
+        # Default weights for fallback
+        default_weights = get_ml_weights() 
+        category_key = f"category_{category.capitalize()}"
+        category_weight = default_weights.get(category_key, default_weights['category_other'])
+        valid_reminders = [reminder_offsets[r] for r in reminders if r in reminder_offsets]
+        reminder_value_total = sum(val for _, val in valid_reminders)
+        importance = category_weight * reminder_value_total
+        flexibility_weight_val = default_weights['flexibility_weight'] if is_flexible else 1.2
+        score = (urgency_score * default_weights['urgency_weight']) + (importance * default_weights['importance_weight']) * flexibility_weight_val
+
+    # Insert into database
     print(f"🔧 DEBUG: Task '{title}' - is_flexible: {is_flexible}, task_type: '{task_type}'")
     
     db = get_db()
@@ -292,6 +484,14 @@ def submit():
     db.commit()
 
     print(f"Task '{title}' saved with score {score:.2f}, flexible: {is_flexible}")
+
+    # --- NEW: Check task count and trigger ML training ---
+    task_count = db.execute("SELECT COUNT(*) FROM tasks").fetchone()[0]
+    if task_count >= 30:
+        print(f"Total tasks ({task_count}) >= 30. Triggering ML model training.")
+        train_ml() # Call the ML training function
+    # --- END NEW ---
+
     return redirect(url_for('dashboard'))
 
 @app.route("/optimize_tasks", methods=["POST"])
@@ -339,7 +539,7 @@ def optimize_tasks():
 
     # ==================== RESCHEDULE FUNCTIONS ====================
 
-     # Constants for schedule mapping
+    # Constants for schedule mapping
     SCHEDULE_START_HOUR = 6  # 6 AM
     SCHEDULE_END_HOUR = 22   # 10 PM
     SLOT_DURATION_MINUTES = 30
@@ -434,10 +634,13 @@ def optimize_tasks():
     def reschedule_flexible_tasks(all_tasks):
         """Main rescheduling function"""
         schedule = initialize_schedule()
+        weights = get_ml_weights()
         
+        adaptive_threshold = 50 * (weights.get('importance_weight', 0.7) / 0.7)
+
         # Separate tasks by type
-        fixed_tasks = [t for t in all_tasks if t.get('is_flexible', 0) == 0 or t.get('score', 0) >= 50]
-        flexible_tasks = [t for t in all_tasks if t.get('is_flexible', 0) == 1 and t.get('score', 0) < 50]
+        fixed_tasks = [t for t in all_tasks if t.get('is_flexible', 0) == 0 or t.get('score', 0) >= adaptive_threshold]
+        flexible_tasks = [t for t in all_tasks if t.get('is_flexible', 0) == 1 and t.get('score', 0) < adaptive_threshold] 
         
         print(f"📊 Task breakdown: {len(fixed_tasks)} fixed/high-priority, {len(flexible_tasks)} flexible/low-priority")
         
@@ -579,23 +782,20 @@ def optimize_tasks():
         normal_count=normal_count,
         unessential_count=unessential_count
     )
+
 @app.route('/mark_completed/<int:task_id>', methods=['POST'])
 def mark_completed(task_id):
     conn = get_db()
     conn.execute("UPDATE tasks SET isCompleted = 1 WHERE id = ?", (task_id,))
     conn.commit()
-    conn.close()
-    print(f"Task {task_id} marked as completed!")
-    return "OK", 200 # Return a success status for AJAX
+    return "OK", 200
 
 @app.route('/delete_task/<int:task_id>', methods=['POST'])
 def delete_task(task_id):
     conn = get_db()
     conn.execute("DELETE FROM tasks WHERE id = ?", (task_id,))
     conn.commit()
-    conn.close()
-    print(f"Task {task_id} deleted!")
-    return "OK", 200 # Return a success status for AJAX
+    return "OK", 200
 
 @app.route("/get_task_hierarchy_modal_content")
 def get_task_hierarchy_modal_content():
@@ -606,15 +806,267 @@ def get_task_hierarchy_modal_content():
         WHERE isCompleted = 0
         ORDER BY score DESC, deadline ASC
     """).fetchall()
-    conn.close()  
     tasks = [dict(row) for row in tasks]
-    # Render a partial template for the modal body
     return render_template("task_hierarchy_modal_content.html", tasks=tasks)
 
+@app.route("/train_ml", methods=["POST", "GET"]) # Added GET for manual trigger/testing
+def train_ml():
+    print("🔄 Triggering ML model training and weight analysis...")
+    try:
+        # We need to make sure there's enough data for training
+        db = get_db()
+        task_count = db.execute("SELECT COUNT(*) FROM tasks").fetchone()[0]
+        if task_count < 5: # MLService needs at least 5 tasks for analysis
+            print(f"⚠️ Not enough tasks ({task_count}) for ML analysis. Skipping training.")
+            return jsonify({"status": "insufficient_data", "message": "Not enough tasks to train ML models (need at least 5)."}), 200
 
+        ml_service_instance.train_cluster_model()
+        ml_service_instance.train_priority_model()
+        
+        new_weights = ml_service_instance.analyze_user_behavior()
+        
+        if new_weights:
+            update_ml_weights(new_weights)
+            print("✅ ML training and weight update successful!")
+            return jsonify({"status": "success", "new_weights": new_weights})
+        else:
+            print("⚠️ ML analysis returned no new weights (insufficient data or error).")
+            return jsonify({"status": "insufficient_data", "message": "Could not determine new weights."})
+    except Exception as e:
+        print(f"❌ ERROR during ML training or analysis: {e}")
+        return jsonify({"status": "error", "message": str(e)})
+
+@app.route("/debug_weights")
+def debug_weights():
+    weights = get_ml_weights()
+    return jsonify(weights)
+
+@app.route("/api/notifications")
+def api_notifications():
+    """Endpoint for frontend to get all notifications"""
+    notifications = get_unified_notifications()
+    return jsonify(notifications)
+
+@app.route("/debug_tasks")
+def debug_tasks():
+    """Debug route to see all tasks in database"""
+    conn = get_db()
+    
+    # Get all tasks
+    all_tasks = conn.execute("SELECT * FROM tasks").fetchall()
+    tasks_list = [dict(task) for task in all_tasks]
+    
+    # Get column info
+    columns = conn.execute("PRAGMA table_info(tasks)").fetchall()
+    column_info = [dict(col) for col in columns]
+    
+    return jsonify({
+        "total_tasks": len(tasks_list),
+        "columns": column_info,
+        "tasks": tasks_list
+    })
+
+@app.route("/test_ml_prediction", methods=["POST"])
+def test_ml_prediction():
+    """Test ML prediction with a sample task"""
+    try:
+        # Create a sample task for testing
+        sample_task = {
+            'deadline': (datetime.now() + timedelta(hours=2)).strftime("%Y-%m-%dT%H:%M"),
+            'duration': 60,
+            'is_flexible': 0,
+            'category': 'Work'
+        }
+        
+        # Get ML prediction
+        predicted_score = ml_service_instance.predict_priority(sample_task)
+        
+        return jsonify({
+            "status": "success",
+            "sample_task": sample_task,
+            "predicted_score": round(predicted_score, 2),
+            "current_weights": get_ml_weights()
+        })
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)})
+    
+@app.route("/ml_analysis")
+def ml_analysis():
+    """Enhanced ML analysis for the analytics dashboard"""
+    conn = get_db()
+    
+    # Get completion patterns by category
+    category_patterns = conn.execute("""
+        SELECT 
+            category,
+            AVG(CASE WHEN isCompleted = 1 THEN 1.0 ELSE 0.0 END) as completion_rate,
+            AVG(score) as avg_score,
+            COUNT(*) as task_count
+        FROM tasks
+        GROUP BY category
+    """).fetchall()
+    
+    # Get completion by priority groups
+    priority_stats = conn.execute("""
+        SELECT 
+            CASE 
+                WHEN score >= 70 THEN 'High Priority'
+                WHEN score >= 40 THEN 'Medium Priority' 
+                ELSE 'Low Priority'
+            END as priority_group,
+            AVG(CASE WHEN isCompleted = 1 THEN 1.0 ELSE 0.0 END) as completion_rate,
+            COUNT(*) as count
+        FROM tasks
+        GROUP BY priority_group
+    """).fetchall()
+    
+    # Get flexibility patterns
+    flexibility_stats = conn.execute("""
+        SELECT 
+            is_flexible,
+            AVG(CASE WHEN isCompleted = 1 THEN 1.0 ELSE 0.0 END) as completion_rate,
+            COUNT(*) as count
+        FROM tasks
+        GROUP BY is_flexible
+    """).fetchall()
+    
+    return jsonify({
+        "task_patterns": [dict(pattern) for pattern in category_patterns],
+        "completion_stats": [dict(stat) for stat in priority_stats],
+        "flexibility_stats": [dict(stat) for stat in flexibility_stats],
+        "current_weights": get_ml_weights()
+    })
+
+@app.route("/api/current_tasks")
+def api_current_tasks():
+    """Get current tasks for ML notifications"""
+    conn = get_db()
+    
+    # Get tasks for the current week
+    now = datetime.now()
+    start_of_week = now - timedelta(days=now.weekday())
+    end_of_week = start_of_week + timedelta(days=6, hours=23, minutes=59, seconds=59)
+    
+    tasks = conn.execute("""
+        SELECT id, title, category, deadline, score, isCompleted,
+               duration, start_hour_int, end_hour_int
+        FROM tasks
+        WHERE deadline BETWEEN ? AND ?
+        ORDER BY deadline ASC
+    """, (start_of_week.strftime("%Y-%m-%d %H:%M"), end_of_week.strftime("%Y-%m-%d %H:%M"))).fetchall()
+    
+    tasks_list = []
+    for task in tasks:
+        task_dict = dict(task)
+        # Parse deadline for frontend
+        try:
+            deadline_dt = datetime.strptime(task_dict['deadline'], "%Y-%m-%d %H:%M")
+            task_dict['deadline'] = deadline_dt.isoformat()
+        except:
+            pass
+            
+        tasks_list.append(task_dict)
+    
+    return jsonify(tasks_list)
+
+def generate_advice_from_weights():
+    """Generate personalized advice text from current ML weights."""
+    weights = get_ml_weights()
+    if not weights:
+        return "Not enough data yet for personalized advice."
+
+    advice = []
+
+    if weights.get('flexibility_weight', 1.0) < 0.8:
+        advice.append("You tend to delay flexible tasks — try scheduling them earlier.")
+    if weights.get('urgency_weight', 1.0) > 1.0:
+        advice.append("You often rush to finish tasks close to their deadlines — set earlier reminders.")
+    if weights.get('category_Work', 1.0) > 1.5:
+        advice.append("Work tasks dominate your schedule — keep an eye on rest and study balance.")
+    if weights.get('category_Education', 1.0) > 1.5:
+        advice.append("You prioritize education tasks effectively — keep it up!")
+    if not advice:
+        advice.append("Your task patterns look well-balanced. Stay consistent!")
+
+    return " ".join(advice)
+
+def generate_analytics_summary():
+    """Generate a structured summary of current ML analytics for the Analytics page."""
+    weights = get_ml_weights()
+    summary = {}
+
+    if not weights:
+        return {"summary": "No analytics data available yet.", "weights": {}}
+
+    urgency = weights.get('urgency_weight', 0.35)
+    importance = weights.get('importance_weight', 0.7)
+    flexibility = weights.get('flexibility_weight', 1.0)
+    work = weights.get('category_Work', 1.0)
+    education = weights.get('category_Education', 1.0)
+    other = weights.get('category_other', 1.0)
+
+    # Interpret values into natural-language summaries
+    trends = []
+
+    if urgency > 1.0:
+        trends.append("Tasks with closer deadlines are influencing your scheduling more strongly.")
+    elif urgency < 0.5:
+        trends.append("You’re prioritizing less urgent tasks more evenly.")
+
+    if importance > 1.0:
+        trends.append("You’re focusing more on high-value tasks overall.")
+    elif importance < 0.5:
+        trends.append("Task importance has less impact on your schedule recently.")
+
+    if flexibility < 1.0:
+        trends.append("Flexible tasks are being deprioritized — you may be delaying them.")
+    elif flexibility > 1.2:
+        trends.append("Flexible tasks are being completed earlier — efficient adaptation!")
+
+    if work > education:
+        trends.append("Work-related tasks are receiving higher priority weighting.")
+    elif education > work:
+        trends.append("Academic tasks dominate your focus this week.")
+
+    summary["trends"] = trends
+    summary["weights"] = weights
+    return summary
+
+
+@app.route("/api/advice")
+def api_advice():
+    return jsonify({"advice": generate_advice_from_weights()})
+# WEEKLY ML TRAINING (COMMENTED OUT FOR NOW)
+# def background_ml_training():
+#     """Background thread for ML training - runs weekly and scans current week tasks"""
+#     while True:
+#         time.sleep(604800)  # Check every week (7 days in seconds)
+#         with app.app_context():
+#             # Scan for tasks in the current week (Monday to Sunday)
+#             now = datetime.now()
+#             start_of_week = now - timedelta(days=now.weekday())
+#             end_of_week = start_of_week + timedelta(days=6, hours=23, minutes=59, seconds=59)
+#             
+#             db = get_db()
+#             weekly_task_count = db.execute("""
+#                 SELECT COUNT(*) FROM tasks 
+#                 WHERE deadline BETWEEN ? AND ?
+#             """, (start_of_week.strftime("%Y-%m-%d %H:%M"), end_of_week.strftime("%Y-%m-%d %H:%M"))).fetchone()[0]
+#             
+#             if weekly_task_count >= 5:  # Train if 5+ tasks in current week
+#                 print(f"🔄 Weekly ML training triggered - {weekly_task_count} tasks this week")
+#                 train_ml()
+#             else:
+#                 print(f"📊 Weekly ML training skipped: Only {weekly_task_count} tasks this week")
+# 
 
 # App Entry Point
 # -------------------------
 if __name__ == "__main__":
     init_db()
+    os.makedirs('models', exist_ok=True) 
+
+# ml_thread = threading.Thread(target=background_ml_training, daemon=True)
+# ml_thread.start()
+
     app.run(debug=True)

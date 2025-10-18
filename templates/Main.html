@@ -199,18 +199,6 @@
             height: 30px; /* Match slot height */
         }
 
-        .task-block,
-        .task-block.Education,
-        .task-block.Work, 
-        .task-block.Personal,
-        .task-block.Health,
-        .task-block.score-critical,
-        .task-block.score-high,
-        .task-block.score-medium,
-        .task-block.score-low {
-            color: white;
-        }
-
         /* Task Blocks */
         .task-block {
             cursor: pointer;
@@ -287,27 +275,60 @@
             cursor: not-allowed;
         }
 
-        /* Floating alert */
-        .alert {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: #6c63ff;
-            color: white;
-            padding: 15px 20px;
-            border-radius: 10px;
-            font-weight: 600;
-            z-index: 2000;
-            opacity: 0;
-            animation: fadeInOut 6s ease-in-out forwards;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-        }
+        #notificationContainer {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+}
 
-        .alert .closebtn {
-            margin-left: 10px;
-            cursor: pointer;
-            font-weight: bold;
-        }
+.alert-notification {
+    background: #6c63ff;
+    color: white;
+    padding: 15px 20px;
+    border-radius: 10px;
+    font-weight: 600;
+    margin-bottom: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    max-width: 300px;
+    animation: slideInRight 0.3s ease-out;
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOutRight {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+}
+@keyframes urgent-pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-3px); }
+    75% { transform: translateX(3px); }
+}
+
 
         .urgent-task {
             border: 2px solid #dc3545 !important;
@@ -411,6 +432,10 @@
 </head>
 
 <body class="bg-beige">
+
+	  <!-- Notification Container -->
+    <div id="notificationContainer" style="position: fixed; top: 20px; right: 20px; z-index: 9999;"></div>
+
     <div class="d-flex">
         <!-- Sidebar -->
         <aside class="sidebar bg-dark text-white p-3">
@@ -433,6 +458,15 @@
         <main class="flex-grow-1 p-5 text-dark">
             <h2>Weekly Tasks</h2>
             <p><strong>{{ formatted_date }}</strong> | Week {{ week_number }}</p>
+            
+            
+            {if advice_text %}
+            <div class="advice-banner p-4 mb-6 bg-gradient-to-r from-blue-50 to-blue-100 border-l-4 border-blue-600 rounded-2xl shadow-md">
+             <h2 class="text-lg font-semibold text-blue-800">Personalized Advice</h2>
+                <p class="mt-1 text-blue-700">{{ advice_text }}</p>
+                </div>
+            {% endif %}
+
 
             <div class="main-content-wrapper">
                 <!-- Left Panel -->
@@ -504,34 +538,36 @@
                                 {% endfor %}
 
                                 <!-- Tasks -->
-                                {% for task in tasks %}
-                                    {% if task.weekday and task.start_hour_int is defined and task.end_hour_int is defined %}
-                                        {# Calculate start slot index #}
-                                        {% set start_slot_index = ((task.start_hour_int - 6) * 60 + task.start_minute_int) // 30 %}
-                                        {# Calculate number of slots needed #}
-                                        {% set duration_minutes = task.duration if task.duration is defined else 60 %} {# Default to 60 mins #}
-                                        {% set num_slots = (duration_minutes + 29) // 30 %} {# Ceil to nearest 30 min block #}
-                                        {% set num_slots = num_slots if num_slots > 0 else 1 %}
-                                        
-                                        {% set day_col = day_columns[task.weekday] %}
-                                        <div class="task-block {{ task.category }} 
-                                            {% if task.score >= 70 %}score-critical
-                                            {% elif task.score >= 40 %}score-high
-                                            {% elif task.score >= 10 %}score-medium
-                                            {% else %}score-low{% endif %}"
-                                            style="grid-column: {{ day_col }}; grid-row: {{ start_slot_index + 2 }} / span {{ num_slots }};"
-                                            data-task-id="{{ task.id }}" 
-                                            data-title="{{ task.title }}"
-                                            data-deadline="{{ task.deadline }}"
-                                            data-reminders='{{ task.reminders or [] | tojson | safe }}' 
-                                            data-score="{{ task.score }}"
-                                            data-start-time="{{ task.start_hour_str }}"
-                                            data-end-time="{{ task.end_hour_str }}">
-                                            {{ task.title }}
-                                        </div>
-                                    {% endif %}
-                                {% endfor %}
-                            </div>
+{% for task in tasks %}
+    {% if task.weekday and task.start_hour_int is defined and task.end_hour_int is defined %}
+        {# Calculate start slot index #}
+        {% set start_slot_index = ((task.start_hour_int - 6) * 60 + task.start_minute_int) // 30 %}
+        {# Calculate number of slots needed #}
+        {% set duration_minutes = task.duration if task.duration is defined else 60 %}
+        {% set num_slots = (duration_minutes + 29) // 30 %}
+        {% set num_slots = num_slots if num_slots > 0 else 1 %}
+        
+        {% set day_col = day_columns[task.weekday] %}
+        <div class="task-block {{ task.category }} 
+            {% if task.score >= 70 %}score-critical
+            {% elif task.score >= 40 %}score-high
+            {% elif task.score >= 10 %}score-medium
+            {% else %}score-low{% endif %}"
+            style="grid-column: {{ day_col }}; grid-row: {{ start_slot_index + 2 }} / span {{ num_slots }};"
+            data-task-id="{{ task.id }}" 
+            data-title="{{ task.title }}"
+            data-deadline="{{ task.deadline }}"
+            data-reminders='{{ task.reminders or "[]" | tojson }}'
+            data-score="{{ "%.1f"|format(task.score|float) }}"
+            data-start-time="{{ task.start_hour_str }}"
+            data-end-time="{{ task.end_hour_str }}"
+            data-category="{{ task.category }}"
+            data-duration="{{ task.duration }}">
+            {{ task.title }}
+        </div>
+    {% endif %}
+{% endfor %}                           
+ </div>
                         </div>
                     </div>
                 </div>
@@ -556,158 +592,558 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
 
-        document.addEventListener('DOMContentLoaded', () => {
-            const tasks = document.querySelectorAll('.task-block');
-            const now = new Date();
 
-        function showAlert(msg) {
-            const alertBox = document.createElement('div');
-            alertBox.className = 'alert';
-            alertBox.innerHTML = `${msg}<span class="closebtn" onclick="this.parentElement.remove()">&times;</span>`;
-            document.body.appendChild(alertBox);
-            setTimeout(() => alertBox.remove(), 6000);
-        }
-
-        let selectedTaskId = null;
-        const markCompletedBtn = document.getElementById('markCompletedBtn');
-        const deleteTaskBtn = document.getElementById('deleteTaskBtn');
-        const taskHierarchyModalElement = document.getElementById('taskHierarchyModal');
-        const taskHierarchyModal = new bootstrap.Modal(taskHierarchyModalElement);
-        const taskHierarchyModalBody = document.querySelector('#taskHierarchyModal .modal-body');
-        const selectedTaskDetailsContainer = document.getElementById('selectedTaskDetails');
-
-        function updateActionButtons() {
-            markCompletedBtn.disabled = !selectedTaskId;
-            deleteTaskBtn.disabled = !selectedTaskId;
-        }
-
-        function updateSelectedTaskDetailsDisplay() {
-            if (selectedTaskId) {
-                const selectedBlock = document.querySelector(`.task-block[data-task-id="${selectedTaskId}"]`);
-                if (selectedBlock) {
-                    const title = selectedBlock.dataset.title;
-                    const score = selectedBlock.dataset.score;
-                    const startTime = selectedBlock.dataset.startTime;
-                    const endTime = selectedBlock.dataset.endTime;
-                    const deadline = new Date(selectedBlock.dataset.deadline).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-                    selectedTaskDetailsContainer.innerHTML = `
-                        <h6>Selected Task:</h6>
-                        <strong>${title}</strong><br>
-                        <small>Time: ${startTime} - ${endTime}</small><br>
-                        <small>Score: ${score}</small><br>
-                        <small>Deadline: ${deadline}</small>`;
+// ML-Powered Notification System
+class MLNotificationManager {
+    constructor() {
+        this.shownNotifications = new Set();
+        this.mlData = null;
+        this.checkMLNotifications();
+    }
+    
+    async checkMLNotifications() {
+        try {
+            console.log('🧠 Checking ML-powered notifications...');
+            
+            // Get ML insights and task data
+            const [mlResponse, tasksResponse, notificationsResponse] = await Promise.all([
+                fetch('/ml_analysis'),
+                fetch('/api/current_tasks'),
+                fetch('/api/notifications')
+            ]);
+            
+            if (!mlResponse.ok || !tasksResponse.ok) throw new Error('Failed to fetch data');
+            
+            this.mlData = await mlResponse.json();
+            const tasks = await tasksResponse.json();
+            const basicNotifications = await notificationsResponse.json();
+            
+            // Show basic notifications (deadlines, reminders)
+            basicNotifications.forEach(notification => {
+                if (!this.shownNotifications.has(`basic_${notification.task_id}_${notification.type}`)) {
+                    this.showBasicNotification(notification);
+                    this.shownNotifications.add(`basic_${notification.task_id}_${notification.type}`);
                 }
-            } else {
-                selectedTaskDetailsContainer.innerHTML = '<small class="text-muted">Click a task to see details.</small>';
-            }
+            });
+            
+            // Generate ML-powered insights
+            this.generateMLNotifications(tasks);
+            
+        } catch (error) {
+            console.log('ML notifications check failed:', error);
         }
-
-        // Fixed task click handler - attach to schedule grid instead of non-existent container
-        document.querySelector('.schedule-grid').addEventListener('click', function (event) {
-            let targetBlock = event.target.closest('.task-block');
-            if (targetBlock) {
-                const taskId = targetBlock.dataset.taskId;
-                if (selectedTaskId === taskId) {
-                    document.querySelectorAll('.task-block.selected').forEach(block => block.classList.remove('selected'));
-                    selectedTaskId = null;
-                } else {
-                    document.querySelectorAll('.task-block.selected').forEach(block => block.classList.remove('selected'));
-                    targetBlock.classList.add('selected');
-                    selectedTaskId = taskId;
-                }
-                updateActionButtons();
-                updateSelectedTaskDetailsDisplay();
+    }
+    
+    generateMLNotifications(tasks) {
+        const notifications = [];
+        
+        // 1. Priority Mismatch Detection
+        const priorityMismatch = this.detectPriorityMismatch(tasks);
+        if (priorityMismatch) notifications.push(priorityMismatch);
+        
+        // 2. Schedule Optimization Alerts
+        const scheduleAlert = this.checkScheduleOptimization(tasks);
+        if (scheduleAlert) notifications.push(scheduleAlert);
+        
+        // 3. Productivity Pattern Alerts
+        const patternAlert = this.checkProductivityPatterns();
+        if (patternAlert) notifications.push(patternAlert);
+        
+        // 4. Deadline Risk Assessment
+        const deadlineAlerts = this.assessDeadlineRisks(tasks);
+        notifications.push(...deadlineAlerts);
+        
+        // 5. Focus Area Recommendations
+        const focusAlert = this.generateFocusRecommendations();
+        if (focusAlert) notifications.push(focusAlert);
+        
+        // Show ML notifications
+        notifications.forEach(notification => {
+            if (!this.shownNotifications.has(notification.id)) {
+                this.showMLNotification(notification);
+                this.shownNotifications.add(notification.id);
             }
         });
+    }
+    
+    detectPriorityMismatch(tasks) {
+        if (!this.mlData?.weights) return null;
+        
+        const highScoreTasks = tasks.filter(task => task.score >= 70);
+        const lowScoreTasks = tasks.filter(task => task.score <= 30);
+        
+        // Alert if high-priority tasks are being neglected
+        const completedHighPriority = highScoreTasks.filter(task => task.completed).length;
+        const completionRate = highScoreTasks.length > 0 ? 
+            (completedHighPriority / highScoreTasks.length) * 100 : 0;
+        
+        if (completionRate < 50 && highScoreTasks.length > 2) {
+            return {
+                id: 'priority_mismatch',
+                type: 'warning',
+                icon: '🎯',
+                title: 'Priority Attention Needed',
+                message: `You've completed only ${Math.round(completionRate)}% of high-priority tasks`,
+                suggestion: 'Focus on urgent tasks first'
+            };
+        }
+        
+        return null;
+    }
+    
+    checkScheduleOptimization(tasks) {
+        if (!this.mlData?.task_patterns) return null;
+        
+        const currentHour = new Date().getHours();
+        const currentTasks = tasks.filter(task => 
+            !task.completed && 
+            task.start_hour_int <= currentHour && 
+            task.end_hour_int >= currentHour
+        );
+        
+        // Check if current time matches productive hours
+        const productivePattern = this.mlData.task_patterns.find(p => 
+            p.completion_rate > 0.7
+        );
+        
+        if (productivePattern && currentTasks.length === 0) {
+            return {
+                id: 'schedule_optimization',
+                type: 'info',
+                icon: '⏰',
+                title: 'Productive Window',
+                message: `This is usually your most productive time for ${productivePattern.category} tasks`,
+                suggestion: 'Consider adding tasks to this time slot'
+            };
+        }
+        
+        return null;
+    }
+    
+    checkProductivityPatterns() {
+        if (!this.mlData?.completion_stats) return null;
+        
+        const lowCompletionGroups = this.mlData.completion_stats.filter(
+            stat => stat.completion_rate < 0.4
+        );
+        
+        if (lowCompletionGroups.length > 0) {
+            const worstGroup = lowCompletionGroups.reduce((prev, current) => 
+                (prev.completion_rate < current.completion_rate) ? prev : current
+            );
             
-            tasks.forEach(task => {
-                const title = task.dataset.title;
-                const deadline = new Date(task.dataset.deadline);
-                const reminders = JSON.parse(task.dataset.reminders || '[]');
+            return {
+                id: 'productivity_pattern',
+                type: 'warning',
+                icon: '📊',
+                title: 'Improvement Opportunity',
+                message: `${worstGroup.priority_group} tasks have low completion rate (${Math.round(worstGroup.completion_rate * 100)}%)`,
+                suggestion: 'Try breaking them into smaller tasks'
+            };
+        }
+        
+        return null;
+    }
+    
+    assessDeadlineRisks(tasks) {
+        const now = new Date();
+        const alerts = [];
+        
+        tasks.forEach(task => {
+            if (task.completed) return;
+            
+            const deadline = new Date(task.deadline);
+            const hoursUntilDeadline = (deadline - now) / (1000 * 60 * 60);
+            
+            // High priority tasks with approaching deadlines
+            if (task.score >= 70 && hoursUntilDeadline < 24) {
+                alerts.push({
+                    id: `deadline_risk_${task.id}`,
+                    type: 'error',
+                    icon: '🚨',
+                    title: 'Critical Deadline',
+                    message: `"${task.title}" due in ${Math.round(hoursUntilDeadline)} hours`,
+                    suggestion: 'Prioritize this task immediately',
+                    taskId: task.id
+                });
+            }
+            
+            // Multiple deadlines clustering
+            if (hoursUntilDeadline < 48 && task.score >= 40) {
+                const similarDeadlineTasks = tasks.filter(t => 
+                    !t.completed && 
+                    t.id !== task.id &&
+                    new Date(t.deadline) - deadline < 24 * 60 * 60 * 1000
+                );
                 
-                reminders.forEach(reminder => {
-                    let reminderTime = new Date(deadline);
-                    
-                    if (reminder === "5m") reminderTime.setMinutes(deadline.getMinutes() - 5);
-                    else if (reminder === "10m") reminderTime.setMinutes(deadline.getMinutes() - 10);
-                    else if (reminder === "15m") reminderTime.setMinutes(deadline.getMinutes() - 15);
-                    else if (reminder === "30m") reminderTime.setMinutes(deadline.getMinutes() - 30);
-                    else if (reminder === "1h") reminderTime.setHours(deadline.getHours() - 1);
-                    else if (reminder === "3h") reminderTime.setHours(deadline.getHours() - 3);
-                    else if (reminder === "1d") reminderTime.setDate(deadline.getDate() - 1);
-                    
-                    const delay = reminderTime.getTime() - now.getTime();
-                    
-                    if (delay > 0 && delay < 24 * 60 * 60 * 1000) {
-                        setTimeout(() => {
-                            showAlert(`⏰ Reminder: ${title} is due soon!`);
-                            task.classList.add('pulsing');
-                        }, delay);
-                    }
-                });
+                if (similarDeadlineTasks.length >= 2) {
+                    alerts.push({
+                        id: `deadline_cluster_${task.id}`,
+                        type: 'warning',
+                        icon: '📅',
+                        title: 'Deadline Cluster',
+                        message: `${similarDeadlineTasks.length + 1} tasks due around the same time`,
+                        suggestion: 'Plan your time carefully'
+                    });
+                }
+            }
+        });
+        
+        return alerts;
+    }
+    
+    generateFocusRecommendations() {
+        if (!this.mlData?.weights) return null;
+        
+        const highestWeight = Math.max(...Object.values(this.mlData.weights));
+        const focusArea = Object.keys(this.mlData.weights).find(
+            key => this.mlData.weights[key] === highestWeight
+        );
+        
+        const friendlyNames = {
+            'urgency_weight': 'Urgent Tasks',
+            'importance_weight': 'Important Goals', 
+            'flexibility_weight': 'Flexible Activities',
+            'category_Work': 'Work Projects',
+            'category_Education': 'Learning Tasks',
+            'category_Personal': 'Personal Development'
+        };
+        
+        return {
+            id: 'focus_recommendation',
+            type: 'info',
+            icon: '💡',
+            title: 'ML Recommendation',
+            message: `Your patterns show strength in ${friendlyNames[focusArea] || focusArea}`,
+            suggestion: 'Leverage this for better productivity'
+        };
+    }
+    
+    showBasicNotification(notification) {
+        const config = {
+            'reminder': { icon: '⏰', type: 'warning', duration: 8000 },
+            'urgency': { icon: '🚨', type: 'error', duration: 10000 },
+            'overdue': { icon: '🔴', type: 'error', duration: 15000 }
+        };
+        
+        const cfg = config[notification.type] || config.reminder;
+        
+        showAlert(
+            `${cfg.icon} ${notification.message}`,
+            cfg.type,
+            cfg.duration
+        );
+        
+        // Update task visual
+        this.updateTaskVisual(notification);
+    }
+    
+    showMLNotification(notification) {
+        const alertBox = document.createElement('div');
+        alertBox.className = 'alert-notification';
+        alertBox.style.cssText = `
+            background: ${this.getNotificationColor(notification.type)};
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            max-width: 350px;
+            animation: slideInRight 0.3s ease-out;
+        `;
+        
+        alertBox.innerHTML = `
+            <div style="display: flex; align-items: flex-start; gap: 10px;">
+                <span style="font-size: 1.4em;">${notification.icon}</span>
+                <div style="flex-grow: 1;">
+                    <div style="font-size: 0.9em; opacity: 0.9;">${notification.title}</div>
+                    <div style="font-size: 0.85em; margin: 5px 0;">${notification.message}</div>
+                    <div style="font-size: 0.8em; opacity: 0.8; font-style: italic;">${notification.suggestion}</div>
+                </div>
+                <button onclick="this.parentElement.parentElement.remove()" 
+                        style="background: none; border: none; color: inherit; cursor: pointer; font-size: 1.2em;">
+                    &times;
+                </button>
+            </div>
+        `;
+        
+        const notificationContainer = document.getElementById('notificationContainer');
+        notificationContainer.appendChild(alertBox);
+        
+        // Auto-remove after duration
+        setTimeout(() => {
+            if (alertBox.parentElement) {
+                alertBox.style.animation = 'slideOutRight 0.3s ease-in forwards';
+                setTimeout(() => alertBox.remove(), 300);
+            }
+        }, 10000);
+        
+        // Update task visual if taskId exists
+        if (notification.taskId) {
+            this.updateTaskVisual(notification);
+        }
+    }
+    
+    getNotificationColor(type) {
+        const colors = {
+            'error': '#dc3545',
+            'warning': '#ffc107',
+            'info': '#6c63ff',
+            'success': '#198754'
+        };
+        return colors[type] || colors.info;
+    }
+    
+    updateTaskVisual(notification) {
+        if (!notification.taskId) return;
+        
+        const taskElement = document.querySelector(`[data-task-id="${notification.taskId}"]`);
+        if (taskElement) {
+            taskElement.classList.remove('urgent-task', 'overdue-task');
             
+            if (notification.type === 'urgency' || notification.type === 'error') {
+                taskElement.classList.add('urgent-task');
+            } else if (notification.type === 'overdue') {
+                taskElement.classList.add('overdue-task');
+            }
+            
+            taskElement.classList.add('pulsing');
+            setTimeout(() => {
+                taskElement.classList.remove('pulsing');
+            }, 5000);
+        }
+    }
+    
+    clearTaskNotifications(taskId) {
+        // Remove notifications for completed/deleted tasks
+        this.shownNotifications.forEach(notificationId => {
+            if (notificationId.includes(taskId)) {
+                this.shownNotifications.delete(notificationId);
+            }
+        });
+    }
+}
 
-            function updateTaskUrgency() {
-                const current = new Date();
-                tasks.forEach(task => {
-                    const deadline = new Date(task.dataset.deadline);
-                    const remaining = deadline - current;
-                    
-                    task.classList.remove('urgent-task', 'overdue-task'); // Clear existing states
+// Alert function
+function showAlert(msg, type = 'info', duration = 6000) {
+    const alertBox = document.createElement('div');
+    
+    const styles = {
+        'info': { background: '#6c63ff', icon: 'ℹ️' },
+        'success': { background: '#198754', icon: '✅' },
+        'warning': { background: '#ffc107', icon: '⚠️', color: '#333' },
+        'error': { background: '#dc3545', icon: '❌' }
+    };
+    
+    const style = styles[type] || styles['info'];
+    
+    alertBox.className = 'alert-notification';
+    alertBox.style.cssText = `
+        background: ${style.background};
+        color: ${style.color || 'white'};
+        padding: 15px 20px;
+        border-radius: 10px;
+        font-weight: 600;
+        margin-bottom: 10px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        max-width: 300px;
+        animation: slideInRight 0.3s ease-out;
+    `;
+    
+    alertBox.innerHTML = `
+        <span style="font-size: 1.2em;">${style.icon}</span>
+        <span style="flex-grow: 1;">${msg}</span>
+        <button onclick="this.parentElement.remove()" style="background: none; border: none; color: inherit; cursor: pointer; font-size: 1.2em;">&times;</button>
+    `;
+    
+    const notificationContainer = document.getElementById('notificationContainer');
+    notificationContainer.appendChild(alertBox);
+    
+    setTimeout(() => {
+        if (alertBox.parentElement) {
+            alertBox.style.animation = 'slideOutRight 0.3s ease-in forwards';
+            setTimeout(() => alertBox.remove(), 300);
+        }
+    }, duration);
+}
 
-                    if (remaining < 0) { // Overdue
-                        task.classList.add('overdue-task');
-                        task.classList.remove('score-low', 'score-medium', 'score-high', 'score-critical');
-                        task.classList.add('score-critical'); // Ensure it's visually critical
-                    } else if (remaining < 30 * 60 * 1000) { // Less than 30 minutes
-                        task.classList.add('urgent-task');
-                    } else if (remaining < 2 * 60 * 60 * 1000) { // Less than 2 hours
-                        task.style.border = '1px solid #fd7e14'; // Orange border
-                    } else {
-                        // Reset border if no special urgency
-                        task.style.border = ''; // Or whatever default it should be
+// Main DOM Content Loaded
+document.addEventListener('DOMContentLoaded', () => {
+    const tasks = document.querySelectorAll('.task-block');
+    const now = new Date();
+    const notificationContainer = document.getElementById('notificationContainer');
+
+    let selectedTaskId = null;
+    const markCompletedBtn = document.getElementById('markCompletedBtn');
+    const deleteTaskBtn = document.getElementById('deleteTaskBtn');
+    const selectedTaskDetailsContainer = document.getElementById('selectedTaskDetails');
+
+    // Initialize notification manager (ONE-TIME only)
+    notificationManager = new MLNotificationManager();
+
+    function updateActionButtons() {
+        const hasSelection = !!selectedTaskId;
+        markCompletedBtn.disabled = !hasSelection;
+        deleteTaskBtn.disabled = !hasSelection;
+    }
+
+    function updateSelectedTaskDetailsDisplay() {
+        if (selectedTaskId) {
+            const selectedBlock = document.querySelector(`.task-block[data-task-id="${selectedTaskId}"]`);
+            if (selectedBlock) {
+                const title = selectedBlock.dataset.title || 'No title';
+                const score = selectedBlock.dataset.score || '0';
+                const startTime = selectedBlock.dataset.startTime || 'Unknown';
+                const endTime = selectedBlock.dataset.endTime || 'Unknown';
+                const category = selectedBlock.dataset.category || 'Unknown';
+                const duration = selectedBlock.dataset.duration || '0';
+                
+                let deadlineText = 'Unknown';
+                try {
+                    const deadline = new Date(selectedBlock.dataset.deadline);
+                    if (!isNaN(deadline.getTime())) {
+                        deadlineText = deadline.toLocaleDateString('en-US', { 
+                            year: 'numeric', 
+                            month: 'long', 
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        });
                     }
+                } catch (e) {
+                    deadlineText = selectedBlock.dataset.deadline || 'Invalid date';
+                }
+
+                selectedTaskDetailsContainer.innerHTML = `
+                    <h6>Selected Task Details:</h6>
+                    <strong>${title}</strong><br>
+                    <small>Category: ${category}</small><br>
+                    <small>Time: ${startTime} - ${endTime}</small><br>
+                    <small>Duration: ${duration} minutes</small><br>
+                    <small>Priority Score: ${score}</small><br>
+                    <small>Deadline: ${deadlineText}</small>
+                `;
+            } else {
+                selectedTaskDetailsContainer.innerHTML = '<small class="text-danger">Task not found.</small>';
+            }
+        } else {
+            selectedTaskDetailsContainer.innerHTML = '<small class="text-muted">Click a task to see details.</small>';
+        }
+    }
+
+    // Task click handler
+    document.querySelector('.schedule-grid').addEventListener('click', function (event) {
+        let targetBlock = event.target.closest('.task-block');
+        if (targetBlock) {
+            const taskId = targetBlock.dataset.taskId;
+            
+            if (selectedTaskId === taskId) {
+                // Deselect if clicking the same task
+                document.querySelectorAll('.task-block.selected').forEach(block => {
+                    block.classList.remove('selected');
                 });
+                selectedTaskId = null;
+            } else {
+                // Select new task
+                document.querySelectorAll('.task-block.selected').forEach(block => {
+                    block.classList.remove('selected');
+                });
+                targetBlock.classList.add('selected');
+                selectedTaskId = taskId;
             }
+            
+            updateActionButtons();
+            updateSelectedTaskDetailsDisplay();
+        }
+    });
 
-            updateTaskUrgency();
-            setInterval(updateTaskUrgency, 60000);
-        });
+    // Action buttons
+    markCompletedBtn.addEventListener('click', async () => {
+    if (selectedTaskId && confirm('Mark this task as completed?')) {
+        try {
+            const response = await fetch(`/mark_completed/${selectedTaskId}`, { method: 'POST' });
+            if (response.ok) {
+                // Clear ML notifications for this task
+                notificationManager.clearTaskNotifications(selectedTaskId);
+                showAlert('✅ Task marked as completed!', 'success');
+                setTimeout(() => window.location.reload(), 1000);
+            }
+        } catch (error) {
+            console.error('Error marking task completed:', error);
+            showAlert('❌ Network error occurred.', 'error');
+        }
+    }
+});
 
-        // Action buttons
-        markCompletedBtn.addEventListener('click', async () => {
-            if (selectedTaskId && confirm('Mark this task as completed?')) {
-                const response = await fetch(`/mark_completed/${selectedTaskId}`, { method: 'POST' });
-                if (response.ok) {
-                    showAlert('✅ Task marked as completed!');
-                    window.location.reload();
-                } else showAlert('❌ Failed to mark task as completed.');
+deleteTaskBtn.addEventListener('click', async () => {
+    if (selectedTaskId && confirm('Delete this task? This cannot be undone!')) {
+        try {
+            const response = await fetch(`/delete_task/${selectedTaskId}`, { method: 'POST' });
+            if (response.ok) {
+                // Clear ML notifications for this task
+                notificationManager.clearTaskNotifications(selectedTaskId);
+                showAlert('🗑️ Task deleted!', 'success');
+                setTimeout(() => window.location.reload(), 1000);
+            }
+        } catch (error) {
+            console.error('Error deleting task:', error);
+            showAlert('❌ Network error occurred.', 'error');
+        }
+    }
+});
+
+    // Task Hierarchy Modal
+    document.getElementById('taskHierarchyBtn').addEventListener('click', async () => {
+        const taskHierarchyModalBody = document.querySelector('#taskHierarchyModal .modal-body');
+        taskHierarchyModalBody.innerHTML = 'Loading tasks...';
+        try {
+            const response = await fetch('/get_task_hierarchy_modal_content');
+            if (response.ok) {
+                taskHierarchyModalBody.innerHTML = await response.text();
+            } else {
+                taskHierarchyModalBody.innerHTML = '<p class="text-danger">Failed to load tasks.</p>';
+            }
+        } catch (error) {
+            console.error('Error loading task hierarchy:', error);
+            taskHierarchyModalBody.innerHTML = '<p class="text-danger">An error occurred while loading tasks.</p>';
+        }
+    });
+
+    // Real-time urgency updates (visual only)
+    function updateTaskUrgency() {
+        const current = new Date();
+        tasks.forEach(task => {
+            const deadline = new Date(task.dataset.deadline);
+            const remaining = deadline - current;
+            
+            task.classList.remove('urgent-task', 'overdue-task');
+
+            if (remaining < 0) {
+                task.classList.add('overdue-task');
+            } else if (remaining < 30 * 60 * 1000) { // 30 minutes
+                task.classList.add('urgent-task');
             }
         });
+    }
 
-        deleteTaskBtn.addEventListener('click', async () => {
-            if (selectedTaskId && confirm('Delete this task? This cannot be undone!')) {
-                const response = await fetch(`/delete_task/${selectedTaskId}`, { method: 'POST' });
-                if (response.ok) {
-                    showAlert('🗑️ Task deleted!');
-                    window.location.reload();
-                } else showAlert('❌ Failed to delete task.');
-            }
-        });
-
-        document.getElementById('taskHierarchyBtn').addEventListener('click', async () => {
-            taskHierarchyModalBody.innerHTML = 'Loading tasks...';
-            try {
-                const response = await fetch('/get_task_hierarchy_modal_content');
-                taskHierarchyModalBody.innerHTML = response.ok ? await response.text() : '<p class="text-danger">Failed to load.</p>';
-            } catch {
-                taskHierarchyModalBody.innerHTML = '<p class="text-danger">An error occurred.</p>';
-            }
-        });
-
-        updateActionButtons();
-        });
-    </script>
+    // Initialize
+    updateActionButtons();
+    updateSelectedTaskDetailsDisplay();
+    updateTaskUrgency();
+    
+    // Update urgency every minute (visual only - no notifications)
+    setInterval(updateTaskUrgency, 60000);
+    
+    // Show initial help message
+    setTimeout(() => {
+        showAlert('👆 Click on any task to see details and actions', 'info', 5000);
+    }, 1000);
+});
+</script>
 </body>
 
 </html>
