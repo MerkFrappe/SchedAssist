@@ -5,9 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Analytics - SchedAssistant</title>
-    <!-- Bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Google Icons -->
     <link rel="stylesheet"
         href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
 
@@ -22,13 +20,21 @@
             object-fit: contain;
         }
 
-        body {
-            overflow: auto;
+        /* Fixed Sidebar */
+        .sidebar {
+            width: 300px;
+            height: 100vh;
+            position: fixed;
+            left: 0;
+            top: 0;
+            overflow-y: auto;
         }
 
-        .card {
-            width: 100%;
-            max-width: 800px;
+        /* Adjust main content */
+        main {
+            margin-left: 300px;
+            width: calc(100% - 300px);
+            min-height: 100vh;
         }
 
         .welcome-card {
@@ -40,61 +46,20 @@
             box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
         }
 
-        .insight-card {
-            background: white;
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 15px;
-            border-left: 4px solid #4a7d7d;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-        }
-
-        .task-block {
-            cursor: pointer;
-            border: 1px solid transparent;
-            transition: all 0.2s ease-in-out;
-            color: black;
-            padding: 20px;
-            border-radius: 10px;
-            font-size: 1.5rem;
-            font-weight: 600;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-            line-height: 1.5;
-        }
-
-        .ward {
-            width: 300px;
-            height: 450px;
-            background-color: grey;
-            text-align: center;
+        .pattern-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            font-weight: bold;
-            border-radius: 20px;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
         }
 
-        div {
-            font-weight: 500;
-            border-radius: 6px;
-            margin-bottom: 8px;
-        }
-
-        .d-flex {
-            height: 130vh;
-            width: 100%;
-        }
-
-        /* Sidebars */
-        .sidebar {
-            min-width: 300px;
-            max-width: 320px;
-            width: 300px;
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
+        .pattern-grid {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 15px;
         }
 
         .sidebar-links h6 {
@@ -119,103 +84,240 @@
             text-decoration: none;
         }
 
-        .sidebar-links li a.active {
-            background-color: #0b5ed7;
-        }
-
         .user-avatar {
             font-size: 3rem;
             margin-bottom: 15px;
         }
 
-        .progress-sm {
-            height: 8px;
+        .chart-container {
+            height: 300px;
+            position: relative;
+        }
+
+        .completion-summary {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+
+        .category-insight {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 15px;
+            border-left: 4px solid #4a7d7d;
+        }
+
+        .insight-card {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            height: 100%;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
     </style>
-    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
 <body class="bg-beige">
-    <div class="d-flex">
-        <!-- Sidebar -->
-        <aside class="sidebar bg-dark text-white p-3">
-            <div class="sidebar-header text-center mb-4">
-                <img src="{{ url_for('static', filename='icon/Icon.png') }}"
-     			alt="SchedAssist logo" class="logo"
-    			 onerror="this.src='{{ url_for('static', filename='icon/Icon-fallback.png') }}'">
-                <h2 class="h5">SchedAssistant</h2>
+    <!-- Fixed Sidebar -->
+    <aside class="sidebar bg-dark text-white p-3">
+        <div class="sidebar-header text-center mb-4">
+            <img src="{{ url_for('static', filename='icon/Icon.png') }}" alt="SchedAssist logo" class="logo"
+                onerror="this.src='{{ url_for('static', filename='icon/Icon-fallback.png') }}'">
+            <h2 class="h5">SchedAssistant</h2>
+        </div>
+        <ul class="list-unstyled sidebar-links">
+            <h6 class="text-uppercase">Main Menu</h6>
+            <li class="mb-2"><a href="{{ url_for('dashboard') }}" class="text-white text-decoration-none">
+                    <span class="material-symbols-outlined">dashboard</span>Dashboard</a>
+            </li>
+            <li class="mb-2"><a href="{{ url_for('schedule') }}" class="text-white text-decoration-none">
+                    <span class="material-symbols-outlined">calendar_month</span>Schedule</a>
+            </li>
+            <li class="mb-2"><a href="{{ url_for('analytics') }}" class="text-white text-decoration-none active">
+                    <span class="material-symbols-outlined">monitoring</span>Analytics</a>
+            </li>
+        </ul>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="p-4">
+        <h2>Analytics</h2>
+        <p><strong>{{ formatted_date }}</strong> | Week {{ week_number }}</p>
+
+        <!-- Personalized Welcome Card -->
+        <div class="welcome-card">
+            <div class="row align-items-center">
+                <div class="col-md-2 text-center">
+                    <div class="user-avatar" id="userAvatar">👤</div>
+                </div>
+                <div class="col-md-10">
+                    <h4 id="welcomeMessage">Welcome back!</h4>
+                    <p id="userInsight" class="mb-0">Checking your productivity patterns...</p>
+                </div>
             </div>
-            <ul class="list-unstyled sidebar-links">
-                <h6 class="text-uppercase">Main Menu</h6>
-                <li class="mb-2"><a href="{{ url_for('dashboard') }}"
-                        class="text-white text-decoration-none"><span class="material-symbols-outlined">dashboard</span>Dashboard</a>
-                </li>
-                <li class="mb-2"><a href="{{ url_for('schedule') }}"
-                        class="text-white text-decoration-none"><span class="material-symbols-outlined">calendar_month</span>Schedule</a>
-                </li>
-                <li class="mb-2"><a href="{{ url_for('analytics') }}"
-                        class="text-white text-decoration-none"><span class="material-symbols-outlined">monitoring</span>Analytics</a>
-                </li>
-            </ul>
-        </aside>
+        </div>
 
-        <!-- Main Content -->
-        <main class="flex-grow-1 p-4">
-            <h2>Analytics</h2>
-            <p><strong>{{ formatted_date }}</strong> | Week {{ week_number }}</p>
-
-            <!-- Personalized Welcome Card -->
-            <div class="welcome-card">
-                <div class="row align-items-center">
-                    <div class="col-md-2 text-center">
-                        <div class="user-avatar" id="userAvatar">👤</div>
+        <div class="row">
+            <!-- Left Column: Completion Rate Chart -->
+            <div class="col-md-8">
+                <div class="card mb-4 bg-dark text-white">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span>Weekly Completion Rate</span>
+                        <span class="badge bg-primary fs-6">{{ day_counts | sum if day_counts else 0 }} completed this
+                            week</span>
                     </div>
-                    <div class="col-md-10">
-                        <h4 id="welcomeMessage">Welcome back!</h4>
-                        <p id="userInsight" class="mb-0">Checking your productivity patterns...</p>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="completedTasksChart"></canvas>
+                        </div>
+                        <!-- Completion Summary -->
+                        <div class="completion-summary">
+                            <div class="row text-center">
+                                <div class="col-4">
+                                    <h5 class="mb-1">{{ day_counts[-1] if day_counts and day_counts|length > 0 else 0 }}
+                                    </h5>
+                                    <small>Today</small>
+                                </div>
+                                <div class="col-4">
+                                    <h5 class="mb-1">{{ (day_counts | sum / day_counts | length) | round(1) if
+                                        day_counts and day_counts|length > 0 else 0 }}</h5>
+                                    <small>Daily Avg</small>
+                                </div>
+                                <div class="col-4">
+                                    <h5 class="mb-1">{{ day_counts | max if day_counts else 0 }}</h5>
+                                    <small>Peak Day</small>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div class="row">
-                <!-- Left Column: Completed Tasks Graph -->
-                <div class="col-md-8">
-                    <div class="card mb-4 bg-dark text-white">
-                        <div class="card-header">Weekly Completion Rate</div>
-                        <div class="card-body">
-                            <canvas id="completedTasksChart" height="120"></canvas>
+            <!-- Right Column: Task Distribution Pie Chart -->
+            <div class="col-md-4">
+                <div class="card mb-4">
+                    <div class="card-header">Task Distribution</div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="taskDistributionChart"></canvas>
                         </div>
-                    </div>
-
-        
-
-                <!-- Right Column: Simple Stats -->
-                <div class="col-md-4">
-                    <!-- Quick Stats -->
-                    <div class="card text-center mb-4">
-                        <div class="card-body">
-                            <h6>Completed This Week</h6>
-                            <h2 id="completedCount">{{ day_counts | sum if day_counts else 0 }}</h2>
-                            <small class="text-muted">Total tasks completed</small>
-                        </div>
-                    </div>
-
-                    <!-- Productivity Tip -->
-                    <div class="card">
-                        <div class="card-header">💡 Productivity Tip</div>
-                        <div class="card-body">
-                            <p id="productivityTip" class="small mb-0">
-                                Break large tasks into smaller steps for better completion rates!
+                        <!-- Category Insight -->
+                        <div class="category-insight">
+                            <h6>📊 This Week's Focus</h6>
+                            <p class="mb-0" id="categoryInsightText">
+                                {% if categoryLabels and categoryCounts %}
+                                {% set max_count = categoryCounts | max %}
+                                {% set max_index = categoryCounts.index(max_count) %}
+                                {% set dominant_category = categoryLabels[max_index] %}
+                                {{ dominant_category }} takes a lot this week.
+                                {% else %}
+                                Complete tasks to see your focus areas!
+                                {% endif %}
                             </p>
                         </div>
                     </div>
                 </div>
             </div>
-        </main>
-    </div>
+        </div>
 
-    <!-- Bootstrap & Chart.js Scripts -->
+        <!-- Analytics Insights Section -->
+        <div class="pattern-card">
+            <div class="row align-items-center mb-3">
+                <div class="col-md-10">
+                    <h4 class="text-white">Your Scheduling Pattern</h4>
+                    <p class="text-white mb-0">Based on Your Behavior...</p>
+                </div>
+            </div>
+
+            <!-- Pattern Grid -->
+            <div class="pattern-grid">
+                <div class="row">
+                    <!-- Urgency Insight -->
+                    <div class="col-md-6 mb-3">
+                        <div class="insight-card">
+                            <div class="card-header d-flex align-items-center bg-transparent border-0 p-0 mb-2">
+                                <span class="material-symbols-outlined me-2">schedule</span>
+                                <h6 class="mb-0">Deadline Behavior</h6>
+                            </div>
+                            <p class="card-text mb-0">
+                                {% if analytics_summary.weights.urgency_weight > 1.0 %}
+                                ⚡ Focusing on urgent deadlines
+                                {% elif analytics_summary.weights.urgency_weight < 0.5 %}
+                                ⏳ Balanced deadline approach
+                                {% else %}
+                                📅 Normal deadline sensitivity
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Importance Insight -->
+                    <div class="col-md-6 mb-3">
+                        <div class="insight-card">
+                            <div class="card-header d-flex align-items-center bg-transparent border-0 p-0 mb-2">
+                                <span class="material-symbols-outlined me-2">priority</span>
+                                <h6 class="mb-0">Value Focus</h6>
+                            </div>
+                            <p class="card-text mb-0">
+                                {% if analytics_summary.weights.importance_weight > 1.0 %}
+                                🎯 High-value task focus
+                                {% elif analytics_summary.weights.importance_weight < 0.5 %}
+                                📊 Balanced importance
+                                {% else %}
+                                💼 Standard priority handling
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Category Focus -->
+                    <div class="col-md-6 mb-3">
+                        <div class="insight-card">
+                            <div class="card-header d-flex align-items-center bg-transparent border-0 p-0 mb-2">
+                                <span class="material-symbols-outlined me-2">category</span>
+                                <h6 class="mb-0">Category Focus</h6>
+                            </div>
+                            <p class="card-text mb-0">
+                                {% set work = analytics_summary.weights.get('category_Work', 0) %}
+                                {% set education = analytics_summary.weights.get('category_Education', 0) %}
+                                {% if work > education + 0.3 %}
+                                💼 Work-focused schedule
+                                {% elif education > work + 0.3 %}
+                                📚 Education-focused schedule
+                                {% else %}
+                                ⚖️ Balanced categories
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Duration Pattern -->
+                    <div class="col-md-6 mb-3">
+                        <div class="insight-card">
+                            <div class="card-header d-flex align-items-center bg-transparent border-0 p-0 mb-2">
+                                <span class="material-symbols-outlined me-2">timer</span>
+                                <h6 class="mb-0">Duration Preference</h6>
+                            </div>
+                            <p class="card-text mb-0">
+                                {% set duration = analytics_summary.weights.get('duration_weight', 1) %}
+                                {% if duration > 1.2 %}
+                                ⏱️ Prefer quick tasks
+                                {% elif duration < 0.8 %}
+                                🧠 Prefer longer tasks
+                                {% else %}
+                                ⏳ Balanced duration
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <script type="text/javascript">
@@ -225,209 +327,81 @@
         const dayCounts = {{ day_counts | tojson | safe }};
         const categoryLabels = {{ category_labels | tojson | safe }};
         const categoryCounts = {{ counts | tojson | safe }};
+        const analyticsSummary = {{ analytics_summary | tojson | safe }};
 
-        console.log('Analytics Data:', archivedTasks, categoryLabels, categoryCounts);
+        console.log('Analytics Data:', {
+            dayLabels,
+            dayCounts,
+            categoryLabels,
+            categoryCounts,
+            analyticsSummary
+        });
 
-        // User Behavior Analysis
-        class UserBehaviorAnalyzer {
-            constructor() {
-                this.userType = '';
-                this.focusArea = '';
-                this.completionTrend = '';
-            }
-
-            analyzeUserPatterns() {
-                this.determineUserType();
-                this.analyzeFocusArea();
-                this.analyzeCompletionTrend();
-                this.updateUI();
-            }
-
-            determineUserType() {
-                const now = new Date();
-                const currentHour = now.getHours();
-                const totalTasks = categoryCounts.reduce((sum, count) => sum + count, 0);
-                const workTasks = categoryCounts[categoryLabels.indexOf('Work')] || 0;
-                
-                if (currentHour < 8) {
-                    this.userType = 'early_bird';
-                } else if (currentHour > 22) {
-                    this.userType = 'night_owl';
-                } else if (workTasks > totalTasks * 0.6) {
-                    this.userType = 'worker_bee';
-                } else {
-                    this.userType = 'balanced';
-                }
-            }
-
-            
-
-            analyzeCompletionTrend() {
-                if (dayCounts.length < 2) {
-                    this.completionTrend = 'steady';
-                    return;
-                }
-                
-                const todayCount = dayCounts[dayCounts.length - 1] || 0;
-                const yesterdayCount = dayCounts[dayCounts.length - 2] || 0;
-                
-                if (todayCount > yesterdayCount * 1.5) {
-                    this.completionTrend = 'improving';
-                } else if (todayCount < yesterdayCount * 0.7) {
-                    this.completionTrend = 'declining';
-                } else {
-                    this.completionTrend = 'steady';
-                }
-            }
-
-            updateUI() {
-                this.updateWelcomeMessage();
-                this.updateFocusInsight();
-                this.updateCompletionInsight();
-                this.updateProductivityTip();
-            }
-
-            updateWelcomeMessage() {
-                const avatar = document.getElementById('userAvatar');
-                const welcome = document.getElementById('welcomeMessage');
-                const insight = document.getElementById('userInsight');
-                
-                const messages = {
-                    'early_bird': { 
-                        avatar: '🌅', 
-                        welcome: 'Good morning, Early Bird!', 
-                        insight: 'Starting your day with analytics - impressive!' 
-                    },
-                    'night_owl': { 
-                        avatar: '🌙', 
-                        welcome: 'Still up, Night Owl?', 
-                        insight: 'Late night productivity session?' 
-                    },
-                    'worker_bee': { 
-                        avatar: '🐝', 
-                        welcome: 'Hey Worker Bee!', 
-                        insight: 'You\'ve got a lot on your plate this week!' 
-                    },
-                    'balanced': { 
-                        avatar: '⚖️', 
-                        welcome: 'Welcome back!', 
-                        insight: 'Great balance across different areas!' 
-                    }
-                };
-                
-                const config = messages[this.userType] || messages.balanced;
-                avatar.textContent = config.avatar;
-                welcome.textContent = config.welcome;
-                insight.textContent = config.insight;
-            }
-
-            updateFocusInsight() {
-                const focusInsight = document.getElementById('focusInsight');
-                const insights = {
-                    'Work': '💼 You got a lot of Work to catch up!',
-                    'Education': '📚 School\'s piling up, stay focused!',
-                    'Personal': '🏠 Got a lot of time for yourself, huh?',
-                    'Health': '💪 Taking good care of yourself!',
-                    'none': '📝 Add some tasks to see your focus areas!'
-                };
-                
-                focusInsight.innerHTML = `<p class="mb-0">${insights[this.focusArea] || '🎯 You\'re focusing on ' + this.focusArea + ' tasks!'}</p>`;
-            }
-
-            updateCompletionInsight() {
-                const completionInsight = document.getElementById('completionInsight');
-                const progressBar = document.getElementById('completionProgress');
-                
-                const todayCount = dayCounts[dayCounts.length - 1] || 0;
-                const avgCount = dayCounts.length > 0 ? dayCounts.reduce((a, b) => a + b) / dayCounts.length : 0;
-                const progressPercent = avgCount > 0 ? Math.min((todayCount / avgCount) * 100, 100) : 0;
-                
-                const insights = {
-                    'improving': `📈 Looks like you got a lot done today compared to yesterday!`,
-                    'declining': `📉 Slow day today? You completed fewer tasks than yesterday.`,
-                    'steady': `📊 Consistent progress! You're maintaining your completion rate.`
-                };
-                
-                completionInsight.textContent = insights[this.completionTrend] || '📝 Track your daily completions!';
-                progressBar.style.width = `${progressPercent}%`;
-                
-                // Color code based on performance
-                if (progressPercent > 120) {
-                    progressBar.className = 'progress-bar bg-success';
-                } else if (progressPercent > 80) {
-                    progressBar.className = 'progress-bar bg-info';
-                } else {
-                    progressBar.className = 'progress-bar bg-warning';
-                }
-            }
-
-            updateProductivityTip() {
-                const tipElement = document.getElementById('productivityTip');
-                const tips = [
-                    "Break large tasks into smaller steps for better completion rates!",
-                    "Schedule your most important tasks during your peak productivity hours.",
-                    "Take short breaks between tasks to maintain focus and energy.",
-                    "Review your completed tasks at the end of each day to track progress.",
-                    "Prioritize tasks based on deadlines and importance to reduce stress."
-                ];
-                
-                const randomTip = tips[Math.floor(Math.random() * tips.length)];
-                tipElement.textContent = randomTip;
-            }
-        }
-
-        // DOMContentLoaded event listener
+        // Initialize charts
         document.addEventListener('DOMContentLoaded', function () {
-            console.log('📈 Initializing Analytics Dashboard...');
-            
-            // Initialize User Behavior Analysis
-            const userAnalyzer = new UserBehaviorAnalyzer();
-            userAnalyzer.analyzeUserPatterns();
-            
-            // Initialize charts
-            const ctx1 = document.getElementById('completedTasksChart')?.getContext('2d');
-            
-            // Chart 1: Completed Tasks (Line Chart)
-            if (ctx1 && Array.isArray(dayLabels) && Array.isArray(dayCounts)) {
-                new Chart(ctx1, {
+            // Line Chart - Completion Rate
+            const lineCtx = document.getElementById('completedTasksChart');
+            if (lineCtx) {
+                new Chart(lineCtx, {
                     type: 'line',
                     data: {
-                        labels: dayLabels,
+                        labels: dayLabels || ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
                         datasets: [{
                             label: 'Completed Tasks',
-                            data: dayCounts,
+                            data: dayCounts || [0, 0, 0, 0, 0, 0, 0],
                             borderColor: '#4a7d7d',
                             backgroundColor: 'rgba(74, 125, 125, 0.2)',
+                            borderWidth: 2,
                             fill: true,
                             tension: 0.3
                         }]
                     },
                     options: {
                         responsive: true,
+                        maintainAspectRatio: false,
                         scales: {
-                            x: { title: { display: true, text: 'Date' }},
-                            y: { title: { display: true, text: 'Tasks Completed' }, beginAtZero: true, ticks: { precision: 0 } }
+                            x: {
+                                ticks: { color: 'white' }
+                            },
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    precision: 0,
+                                    color: 'white'
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                labels: { color: 'white' }
+                            }
                         }
                     }
                 });
             }
 
-            // Chart 2: Task Focus (Pie Chart)
-            const focusCtx = document.getElementById('taskFocusChart')?.getContext('2d');
-            if (focusCtx && Array.isArray(categoryLabels) && Array.isArray(categoryCounts)) {
-                new Chart(focusCtx, {
+            // Pie Chart - Task Distribution
+            const pieCtx = document.getElementById('taskDistributionChart');
+            if (pieCtx) {
+                new Chart(pieCtx, {
                     type: 'pie',
                     data: {
-                        labels: categoryLabels,
+                        labels: categoryLabels || ['Work', 'Education', 'Personal', 'Health', 'Other'],
                         datasets: [{
-                            data: categoryCounts,
-                            backgroundColor: ['#4a7d7d', '#dc3545', '#ffc107', '#198754', '#6f42c1']
+                            data: categoryCounts || [1, 1, 1, 1, 1],
+                            backgroundColor: [
+                                '#4a7d7d', '#dc3545', '#ffc107', '#198754', '#6f42c1',
+                                '#e83e8c', '#fd7e14', '#20c997', '#6610f2', '#6c757d'
+                            ]
                         }]
                     },
                     options: {
                         responsive: true,
+                        maintainAspectRatio: false,
                         plugins: {
-                            legend: { position: 'bottom' }
+                            legend: {
+                                position: 'bottom'
+                            }
                         }
                     }
                 });

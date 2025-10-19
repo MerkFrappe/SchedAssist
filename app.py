@@ -408,7 +408,7 @@ def analytics():
         tasks_this_week=tasks_this_week,
         formatted_date=formatted_date, 
         week_number=week_number,
-        analytics_summary=analytics_summary
+        analytics_summary=analytics_summary,
         weights=weights
 
     )
@@ -991,46 +991,58 @@ def generate_advice_from_weights():
     return " ".join(advice)
 
 def generate_analytics_summary():
-    """Generate a structured summary of current ML analytics for the Analytics page."""
+    """Simple decision-based analytics summary"""
     weights = get_ml_weights()
-    summary = {}
-
+    
     if not weights:
         return {"summary": "No analytics data available yet.", "weights": {}}
-
+    
+    trends = []
+    
+    # Simple if-else decisions (much cleaner)
     urgency = weights.get('urgency_weight', 0.35)
     importance = weights.get('importance_weight', 0.7)
     flexibility = weights.get('flexibility_weight', 1.0)
     work = weights.get('category_Work', 1.0)
     education = weights.get('category_Education', 1.0)
-    other = weights.get('category_other', 1.0)
-
-    # Interpret values into natural-language summaries
-    trends = []
-
+    duration = weights.get('duration_weight', 1.0)  # Add duration
+    
+    # Urgency decisions
     if urgency > 1.0:
-        trends.append("Tasks with closer deadlines are influencing your scheduling more strongly.")
+        trends.append("⚡ Deadline-driven: You're focusing on time-sensitive tasks")
     elif urgency < 0.5:
-        trends.append("You’re prioritizing less urgent tasks more evenly.")
-
+        trends.append("⏳ Even pace: You're spreading attention across deadlines")
+    
+    # Importance decisions  
     if importance > 1.0:
-        trends.append("You’re focusing more on high-value tasks overall.")
+        trends.append("🎯 High-value focus: Prioritizing important tasks")
     elif importance < 0.5:
-        trends.append("Task importance has less impact on your schedule recently.")
-
-    if flexibility < 1.0:
-        trends.append("Flexible tasks are being deprioritized — you may be delaying them.")
+        trends.append("📊 Balanced value: Importance isn't driving your schedule")
+    
+    # Flexibility decisions
+    if flexibility < 0.8:
+        trends.append("📅 Structured: You're sticking to fixed-time tasks")
     elif flexibility > 1.2:
-        trends.append("Flexible tasks are being completed earlier — efficient adaptation!")
+        trends.append("🔄 Adaptive: Great at fitting flexible tasks in gaps")
+    
+    # Category decisions
+    if work > education + 0.3:
+        trends.append("💼 Work focus: Professional tasks dominating")
+    elif education > work + 0.3:
+        trends.append("📚 Study mode: Academic tasks are priority")
+    
+    # Duration decisions (NEW - simple)
+    if duration > 1.2:
+        trends.append("⏱️ Quick tasks: Preferring shorter, faster tasks")
+    elif duration < 0.8:
+        trends.append("🧠 Deep work: Focusing on longer, complex tasks")
+    
+    return {
+        "trends": trends,
+        "weights": weights,
+        "summary": " | ".join(trends) if trends else "No clear patterns yet"
+    }
 
-    if work > education:
-        trends.append("Work-related tasks are receiving higher priority weighting.")
-    elif education > work:
-        trends.append("Academic tasks dominate your focus this week.")
-
-    summary["trends"] = trends
-    summary["weights"] = weights
-    return summary
 
 
 @app.route("/api/advice")
