@@ -161,7 +161,7 @@
         .schedule-grid {
             display: grid;
             grid-template-columns: repeat(7, 1fr);
-            grid-template-rows: 50px repeat(32, 30px); /* 1 header row + 32 slots * 30px height */
+            grid-template-rows: 50px repeat(64, 15px); /* 1 header row + 32 slots * 30px height */
             gap: 1px;
             background-color: #ddd;
             border: 1px solid #ddd;
@@ -196,7 +196,7 @@
             border-bottom: 1px solid #eee;
 	        position: relative;
     	    z-index: 1;
-            height: 30px; /* Match slot height */
+            height: 15px; /* Match slot height */
         }
 
         /* Task Blocks */
@@ -460,13 +460,13 @@
             <p><strong>{{ formatted_date }}</strong> | Week {{ week_number }}</p>
             
             
-            {%if advice_text %}
-            <div class="advice-banner p-4 mb-6 bg-gradient-to-r from-blue-50 to-blue-100 border-l-4 border-blue-600 rounded-2xl shadow-md">
-             <h2 class="text-lg font-semibold text-blue-800">Personalized Advice</h2>
-                <p class="mt-1 text-blue-700">{{ advice_text }}</p>
-                </div>
-            {% endif %}
-
+   {% if advice_text and advice_text.strip() %}
+<div id="personalizedAdviceAlert" class="alert alert-info alert-dismissible fade show mb-4" role="alert">
+    <h4 class="alert-heading">Personalized Advice</h4>
+    {{ advice_text }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
+{% endif %}
 
             <div class="main-content-wrapper">
                 <!-- Left Panel -->
@@ -528,23 +528,25 @@
                                 {% endfor %}
 
                                 <!-- Grid cells -->
-                                {% for i in range(32) %} {# 32 slots for 16 hours * 2 #}
-                                    {% set current_grid_row = i + 2 %} {# +2 because grid-row starts after header #}
-                                    {% for day in ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'] %}
-                                    <div class="grid-cell"
-                                        style="grid-column: {{ day_columns[day] }}; grid-row: {{ current_grid_row }}">
-                                    </div>
-                                    {% endfor %}
-                                {% endfor %}
-
+                                
+{% for i in range(64) %} {# 64 slots for 16 hours * 4 (15-minute intervals) #}
+    {% set current_grid_row = i + 2 %} {# +2 because grid-row starts after header #}
+    {% for day in ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'] %}
+    <div class="grid-cell"
+        style="grid-column: {{ day_columns[day] }}; grid-row: {{ current_grid_row }};">
+    </div>
+    {% endfor %}
+{% endfor %}
                                 <!-- Tasks -->
+     <!-- Corrected Jinja2 task block -->
 {% for task in tasks %}
     {% if task.weekday and task.start_hour_int is defined and task.end_hour_int is defined %}
-        {# Calculate start slot index #}
-        {% set start_slot_index = ((task.start_hour_int - 6) * 60 + task.start_minute_int) // 30 %}
-        {# Calculate number of slots needed #}
-        {% set duration_minutes = task.duration if task.duration is defined else 60 %}
-        {% set num_slots = (duration_minutes + 29) // 30 %}
+        {% set start_minutes_from_6am = (task.start_hour_int - 6) * 60 + task.start_minute_int %}
+        {% set duration_minutes = task.duration | default(60) %}
+        
+        {# Calculate grid positions with 15-minute precision #}
+        {% set start_slot_index = (start_minutes_from_6am // 15) + 1 %} {# +1 for header row #}
+        {% set num_slots = (duration_minutes + 14) // 15 %} {# Round up to nearest 15 minutes #}
         {% set num_slots = num_slots if num_slots > 0 else 1 %}
         
         {% set day_col = day_columns[task.weekday] %}
@@ -553,20 +555,20 @@
             {% elif task.score >= 40 %}score-high
             {% elif task.score >= 10 %}score-medium
             {% else %}score-low{% endif %}"
-            style="grid-column: {{ day_col }}; grid-row: {{ start_slot_index + 2 }} / span {{ num_slots }};"
+            style="grid-column: {{ day_col }}; grid-row: {{ start_slot_index }} / span {{ num_slots }};"
             data-task-id="{{ task.id }}" 
             data-title="{{ task.title }}"
             data-deadline="{{ task.deadline }}"
-            data-reminders='{{ task.reminders or "[]" | tojson }}'
+            data-reminders='{{ task.reminders | default("[]") }}'
             data-score="{{ "%.1f"|format(task.score|float) }}"
             data-start-time="{{ task.start_hour_str }}"
             data-end-time="{{ task.end_hour_str }}"
             data-category="{{ task.category }}"
-            data-duration="{{ task.duration }}">
+            data-duration="{{ task.duration | default(60) }}">
             {{ task.title }}
         </div>
     {% endif %}
-{% endfor %}                           
+{% endfor %}
  </div>
                         </div>
                     </div>
@@ -593,44 +595,59 @@
     <script>
 
 
+
 // ML-Powered Notification System
+
 class MLNotificationManager {
     constructor() {
-        this.shownNotifications = new Set();
+        // Load previously shown notifications from localStorage
+        const stored = JSON.parse(localStorage.getItem('shownNotifications') || '[]');
+        this.shownNotifications = new Set(stored);
         this.mlData = null;
-        this.checkMLNotifications();
+        
+        // Check notifications only once on page load
+        this.checkMLNotifications(); 
     }
     
     async checkMLNotifications() {
         try {
             console.log('🧠 Checking ML-powered notifications...');
             
-            // Get ML insights and task data
             const [mlResponse, tasksResponse, notificationsResponse] = await Promise.all([
                 fetch('/ml_analysis'),
                 fetch('/api/current_tasks'),
                 fetch('/api/notifications')
             ]);
             
-            if (!mlResponse.ok || !tasksResponse.ok) throw new Error('Failed to fetch data');
+            if (!mlResponse.ok) throw new Error(`Failed to fetch ML analysis: ${mlResponse.statusText}`);
+            if (!tasksResponse.ok) throw new Error(`Failed to fetch current tasks: ${tasksResponse.statusText}`);
+            if (!notificationsResponse.ok) throw new Error(`Failed to fetch basic notifications: ${notificationsResponse.statusText}`);
             
             this.mlData = await mlResponse.json();
             const tasks = await tasksResponse.json();
             const basicNotifications = await notificationsResponse.json();
             
-            // Show basic notifications (deadlines, reminders)
+            // Show basic notifications (deadlines, reminders) only once
             basicNotifications.forEach(notification => {
-                if (!this.shownNotifications.has(`basic_${notification.task_id}_${notification.type}`)) {
+                const notificationId = `basic_${notification.task_id}_${notification.type}`;
+                if (!this.shownNotifications.has(notificationId)) {
                     this.showBasicNotification(notification);
-                    this.shownNotifications.add(`basic_${notification.task_id}_${notification.type}`);
+                    this.shownNotifications.add(notificationId);
                 }
             });
             
-            // Generate ML-powered insights
-            this.generateMLNotifications(tasks);
+            // Generate ML-powered insights if mlData is available
+            if (this.mlData) {
+                this.generateMLNotifications(tasks);
+            } else {
+                console.warn('ML data not available for generating advanced notifications.');
+            }
+            
+            // Save to localStorage after processing all notifications
+            localStorage.setItem('shownNotifications', JSON.stringify([...this.shownNotifications]));
             
         } catch (error) {
-            console.log('ML notifications check failed:', error);
+            console.error('ML notifications check failed:', error);
         }
     }
     
@@ -657,167 +674,19 @@ class MLNotificationManager {
         const focusAlert = this.generateFocusRecommendations();
         if (focusAlert) notifications.push(focusAlert);
         
-        // Show ML notifications
+        // Show ML notifications only once
         notifications.forEach(notification => {
             if (!this.shownNotifications.has(notification.id)) {
                 this.showMLNotification(notification);
                 this.shownNotifications.add(notification.id);
             }
         });
+        
+        // Save to localStorage after ML notifications
+        localStorage.setItem('shownNotifications', JSON.stringify([...this.shownNotifications]));
     }
     
-    detectPriorityMismatch(tasks) {
-        if (!this.mlData?.weights) return null;
-        
-        const highScoreTasks = tasks.filter(task => task.score >= 70);
-        const lowScoreTasks = tasks.filter(task => task.score <= 30);
-        
-        // Alert if high-priority tasks are being neglected
-        const completedHighPriority = highScoreTasks.filter(task => task.completed).length;
-        const completionRate = highScoreTasks.length > 0 ? 
-            (completedHighPriority / highScoreTasks.length) * 100 : 0;
-        
-        if (completionRate < 50 && highScoreTasks.length > 2) {
-            return {
-                id: 'priority_mismatch',
-                type: 'warning',
-                icon: '🎯',
-                title: 'Priority Attention Needed',
-                message: `You've completed only ${Math.round(completionRate)}% of high-priority tasks`,
-                suggestion: 'Focus on urgent tasks first'
-            };
-        }
-        
-        return null;
-    }
-    
-    checkScheduleOptimization(tasks) {
-        if (!this.mlData?.task_patterns) return null;
-        
-        const currentHour = new Date().getHours();
-        const currentTasks = tasks.filter(task => 
-            !task.completed && 
-            task.start_hour_int <= currentHour && 
-            task.end_hour_int >= currentHour
-        );
-        
-        // Check if current time matches productive hours
-        const productivePattern = this.mlData.task_patterns.find(p => 
-            p.completion_rate > 0.7
-        );
-        
-        if (productivePattern && currentTasks.length === 0) {
-            return {
-                id: 'schedule_optimization',
-                type: 'info',
-                icon: '⏰',
-                title: 'Productive Window',
-                message: `This is usually your most productive time for ${productivePattern.category} tasks`,
-                suggestion: 'Consider adding tasks to this time slot'
-            };
-        }
-        
-        return null;
-    }
-    
-    checkProductivityPatterns() {
-        if (!this.mlData?.completion_stats) return null;
-        
-        const lowCompletionGroups = this.mlData.completion_stats.filter(
-            stat => stat.completion_rate < 0.4
-        );
-        
-        if (lowCompletionGroups.length > 0) {
-            const worstGroup = lowCompletionGroups.reduce((prev, current) => 
-                (prev.completion_rate < current.completion_rate) ? prev : current
-            );
-            
-            return {
-                id: 'productivity_pattern',
-                type: 'warning',
-                icon: '📊',
-                title: 'Improvement Opportunity',
-                message: `${worstGroup.priority_group} tasks have low completion rate (${Math.round(worstGroup.completion_rate * 100)}%)`,
-                suggestion: 'Try breaking them into smaller tasks'
-            };
-        }
-        
-        return null;
-    }
-    
-    assessDeadlineRisks(tasks) {
-        const now = new Date();
-        const alerts = [];
-        
-        tasks.forEach(task => {
-            if (task.completed) return;
-            
-            const deadline = new Date(task.deadline);
-            const hoursUntilDeadline = (deadline - now) / (1000 * 60 * 60);
-            
-            // High priority tasks with approaching deadlines
-            if (task.score >= 70 && hoursUntilDeadline < 24) {
-                alerts.push({
-                    id: `deadline_risk_${task.id}`,
-                    type: 'error',
-                    icon: '🚨',
-                    title: 'Critical Deadline',
-                    message: `"${task.title}" due in ${Math.round(hoursUntilDeadline)} hours`,
-                    suggestion: 'Prioritize this task immediately',
-                    taskId: task.id
-                });
-            }
-            
-            // Multiple deadlines clustering
-            if (hoursUntilDeadline < 48 && task.score >= 40) {
-                const similarDeadlineTasks = tasks.filter(t => 
-                    !t.completed && 
-                    t.id !== task.id &&
-                    new Date(t.deadline) - deadline < 24 * 60 * 60 * 1000
-                );
-                
-                if (similarDeadlineTasks.length >= 2) {
-                    alerts.push({
-                        id: `deadline_cluster_${task.id}`,
-                        type: 'warning',
-                        icon: '📅',
-                        title: 'Deadline Cluster',
-                        message: `${similarDeadlineTasks.length + 1} tasks due around the same time`,
-                        suggestion: 'Plan your time carefully'
-                    });
-                }
-            }
-        });
-        
-        return alerts;
-    }
-    
-    generateFocusRecommendations() {
-        if (!this.mlData?.weights) return null;
-        
-        const highestWeight = Math.max(...Object.values(this.mlData.weights));
-        const focusArea = Object.keys(this.mlData.weights).find(
-            key => this.mlData.weights[key] === highestWeight
-        );
-        
-        const friendlyNames = {
-            'urgency_weight': 'Urgent Tasks',
-            'importance_weight': 'Important Goals', 
-            'flexibility_weight': 'Flexible Activities',
-            'category_Work': 'Work Projects',
-            'category_Education': 'Learning Tasks',
-            'category_Personal': 'Personal Development'
-        };
-        
-        return {
-            id: 'focus_recommendation',
-            type: 'info',
-            icon: '💡',
-            title: 'ML Recommendation',
-            message: `Your patterns show strength in ${friendlyNames[focusArea] || focusArea}`,
-            suggestion: 'Leverage this for better productivity'
-        };
-    }
+    // ... keep all your existing methods (detectPriorityMismatch, checkScheduleOptimization, etc.) exactly the same ...
     
     showBasicNotification(notification) {
         const config = {
@@ -828,10 +697,11 @@ class MLNotificationManager {
         
         const cfg = config[notification.type] || config.reminder;
         
-        showAlert(
+        this.showAlert(
             `${cfg.icon} ${notification.message}`,
             cfg.type,
-            cfg.duration
+            cfg.duration,
+            `basic_${notification.task_id}_${notification.type}`
         );
         
         // Update task visual
@@ -839,11 +709,37 @@ class MLNotificationManager {
     }
     
     showMLNotification(notification) {
+        this.showAlert(
+            `${notification.icon} ${notification.message}`,
+            notification.type,
+            10000, // 10 seconds for ML notifications
+            notification.id,
+            notification.title,
+            notification.suggestion
+        );
+        
+        // Update task visual if taskId exists
+        if (notification.taskId) {
+            this.updateTaskVisual(notification);
+        }
+    }
+    
+    showAlert(msg, type = 'info', duration = 6000, notificationId = null, title = '', suggestion = '') {
         const alertBox = document.createElement('div');
+        
+        const styles = {
+            'info': { background: '#6c63ff', icon: 'ℹ️' },
+            'success': { background: '#198754', icon: '✅' },
+            'warning': { background: '#ffc107', icon: '⚠️', color: '#333' },
+            'error': { background: '#dc3545', icon: '❌' }
+        };
+        
+        const style = styles[type] || styles['info'];
+        
         alertBox.className = 'alert-notification';
         alertBox.style.cssText = `
-            background: ${this.getNotificationColor(notification.type)};
-            color: white;
+            background: ${style.background};
+            color: ${style.color || 'white'};
             padding: 15px;
             border-radius: 10px;
             font-weight: 600;
@@ -853,36 +749,66 @@ class MLNotificationManager {
             animation: slideInRight 0.3s ease-out;
         `;
         
-        alertBox.innerHTML = `
-            <div style="display: flex; align-items: flex-start; gap: 10px;">
-                <span style="font-size: 1.4em;">${notification.icon}</span>
-                <div style="flex-grow: 1;">
-                    <div style="font-size: 0.9em; opacity: 0.9;">${notification.title}</div>
-                    <div style="font-size: 0.85em; margin: 5px 0;">${notification.message}</div>
-                    <div style="font-size: 0.8em; opacity: 0.8; font-style: italic;">${notification.suggestion}</div>
+        // Enhanced HTML with title and suggestion for ML notifications
+        let alertHTML = '';
+        if (title) {
+            alertHTML = `
+                <div style="display: flex; align-items: flex-start; gap: 10px;">
+                    <span style="font-size: 1.4em;">${msg.split(' ')[0]}</span>
+                    <div style="flex-grow: 1;">
+                        <div style="font-size: 0.9em; opacity: 0.9;">${title}</div>
+                        <div style="font-size: 0.85em; margin: 5px 0;">${msg.replace(/^[^ ]+ /, '')}</div>
+                        <div style="font-size: 0.8em; opacity: 0.8; font-style: italic;">${suggestion}</div>
+                    </div>
+                    <button class="close-notification" style="background: none; border: none; color: inherit; cursor: pointer; font-size: 1.2em;">
+                        &times;
+                    </button>
                 </div>
-                <button onclick="this.parentElement.parentElement.remove()" 
-                        style="background: none; border: none; color: inherit; cursor: pointer; font-size: 1.2em;">
-                    &times;
-                </button>
-            </div>
-        `;
+            `;
+        } else {
+            alertHTML = `
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 1.2em;">${msg.split(' ')[0]}</span>
+                    <span style="flex-grow: 1;">${msg.replace(/^[^ ]+ /, '')}</span>
+                    <button class="close-notification" style="background: none; border: none; color: inherit; cursor: pointer; font-size: 1.2em;">
+                        &times;
+                    </button>
+                </div>
+            `;
+        }
+        
+        alertBox.innerHTML = alertHTML;
         
         const notificationContainer = document.getElementById('notificationContainer');
-        notificationContainer.appendChild(alertBox);
+        if (notificationContainer) {
+            notificationContainer.appendChild(alertBox);
+        } else {
+            console.error('Notification container not found!');
+            return;
+        }
+        
+        // Add click handler for close button
+        const closeButton = alertBox.querySelector('.close-notification');
+        closeButton.addEventListener('click', () => {
+            // Mark as shown in localStorage when user manually closes
+            if (notificationId) {
+                this.shownNotifications.add(notificationId);
+                localStorage.setItem('shownNotifications', JSON.stringify([...this.shownNotifications]));
+            }
+            alertBox.remove();
+        });
         
         // Auto-remove after duration
         setTimeout(() => {
             if (alertBox.parentElement) {
                 alertBox.style.animation = 'slideOutRight 0.3s ease-in forwards';
-                setTimeout(() => alertBox.remove(), 300);
+                setTimeout(() => {
+                    if (alertBox.parentElement) {
+                        alertBox.remove();
+                    }
+                }, 300);
             }
-        }, 10000);
-        
-        // Update task visual if taskId exists
-        if (notification.taskId) {
-            this.updateTaskVisual(notification);
-        }
+        }, duration);
     }
     
     getNotificationColor(type) {
@@ -917,15 +843,36 @@ class MLNotificationManager {
     
     clearTaskNotifications(taskId) {
         // Remove notifications for completed/deleted tasks
-        this.shownNotifications.forEach(notificationId => {
+        for (const notificationId of Array.from(this.shownNotifications)) {
             if (notificationId.includes(taskId)) {
                 this.shownNotifications.delete(notificationId);
             }
-        });
+        }
+        localStorage.setItem('shownNotifications', JSON.stringify([...this.shownNotifications]));
+    }
+    
+    // Method to reset notifications for a new day (call this daily)
+    resetDailyNotifications() {
+        const today = new Date().toDateString();
+        const lastReset = localStorage.getItem('lastNotificationReset');
+        
+        if (lastReset !== today) {
+            this.shownNotifications.clear();
+            localStorage.setItem('shownNotifications', JSON.stringify([]));
+            localStorage.setItem('lastNotificationReset', today);
+        }
     }
 }
 
-// Alert function
+// Initialize notification manager
+let notificationManager;
+
+document.addEventListener('DOMContentLoaded', () => {
+    notificationManager = new MLNotificationManager();
+    // Optional: Reset notifications daily at midnight
+    notificationManager.resetDailyNotifications();
+});
+
 function showAlert(msg, type = 'info', duration = 6000) {
     const alertBox = document.createElement('div');
     
@@ -977,14 +924,33 @@ document.addEventListener('DOMContentLoaded', () => {
     const now = new Date();
     const notificationContainer = document.getElementById('notificationContainer');
 
+
+
     let selectedTaskId = null;
     const markCompletedBtn = document.getElementById('markCompletedBtn');
     const deleteTaskBtn = document.getElementById('deleteTaskBtn');
     const selectedTaskDetailsContainer = document.getElementById('selectedTaskDetails');
-
+     const adviceAlert = document.getElementById('personalizedAdviceAlert');
     // Initialize notification manager (ONE-TIME only)
     notificationManager = new MLNotificationManager();
+    
+    if (adviceAlert) {
+        const today = new Date().toDateString();
+        const lastShownAdvice = localStorage.getItem('lastShownPersonalizedAdvice');
 
+        if (lastShownAdvice === today) {
+            // Already shown today, hide it
+            adviceAlert.remove();
+        } else {
+            // Show it and record that it was shown today
+            localStorage.setItem('lastShownPersonalizedAdvice', today);
+            
+            // Add event listener for manual close to immediately hide for future page loads today
+            adviceAlert.querySelector('.btn-close').addEventListener('click', () => {
+                localStorage.setItem('lastShownPersonalizedAdvice', today);
+            });
+        }
+    }
     function updateActionButtons() {
         const hasSelection = !!selectedTaskId;
         markCompletedBtn.disabled = !hasSelection;

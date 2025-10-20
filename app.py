@@ -162,24 +162,57 @@ def get_unified_notifications():
         
         print(f"🔧 Using column name: {completed_column}")
         
-        # 1. Get upcoming reminders (due in next 15 minutes)
-        reminder_threshold = now + timedelta(minutes=15)
-        reminders = conn.execute(f"""
-            SELECT id, title, deadline, reminders
+        # 1. Get upcoming reminders (triggered before task *start* time)
+        tasks = conn.execute(f"""
+            SELECT id, title, deadline, duration, reminders
             FROM tasks 
-            WHERE {completed_column} = 0 
-            AND deadline BETWEEN ? AND ?
-        """, (now, reminder_threshold)).fetchall()
-        
-        for task in reminders:
-            notifications.append({
-                'type': 'reminder',
-                'task_id': task['id'],
-                'title': task['title'],
-                'message': f"Due soon: {task['title']}",
-                'priority': 'medium',
-                'deadline': task['deadline']
-            })
+            WHERE {completed_column} = 0
+        """).fetchall()
+
+        for task in tasks:
+            try:
+        # Parse deadline and compute start time
+                deadline_dt = datetime.strptime(task['deadline'], "%Y-%m-%d %H:%M")
+                duration = task['duration'] if 'duration' in task.keys() and task['duration'] else 60
+                duration = int(duration) # default 60 minutes if missing
+                start_dt = deadline_dt - timedelta(minutes=duration)
+                reminder_list = (task['reminders'] or "").split(",")
+
+                for r in reminder_list:
+                    r = r.strip()
+                    if not r:
+                        continue
+
+                    amount_str = "".join([ch for ch in r if ch.isdigit()])
+                    if not amount_str:
+                        continue
+
+                    amount = int(amount_str)
+                    unit = "".join([ch for ch in r if ch.isalpha()])
+                    if unit == "m":
+                        offset = timedelta(minutes=amount)
+                    elif unit == "h":
+                        offset = timedelta(hours=amount)
+                    elif unit == "d":
+                        offset = timedelta(days=amount)
+                    else:
+                        continue  # skip unrecognized units
+
+                    reminder_time = start_dt - offset
+
+        # Check if reminder should trigger soon (before *start*, not before deadline)
+                    if reminder_time <= now < reminder_time + timedelta(minutes=1):
+                        notifications.append({
+                    'type': 'reminder',
+                    'task_id': task['id'],
+                    'title': task['title'],
+                    'message': f"Starting soon: {task['title']}",
+                    'priority': 'medium',
+                    'start_time': start_dt.strftime("%Y-%m-%d %H:%M"),
+                    'deadline': task['deadline']
+                })
+            except Exception as e:
+                print(f"⚠️ Error computing start time for task {task['title']}: {e}")
         
         # 2. Get urgent tasks (due in next 1 hour)
         urgent_threshold = now + timedelta(hours=1)
@@ -522,13 +555,13 @@ def optimize_tasks():
             task["end_hour_int"] = deadline_dt.hour
             task["start_minute_int"] = start_dt.minute
             task["end_minute_int"] = deadline_dt.minute
-            task["start_hour_str"] = start_dt.strftime('%H:%M')
-            task["end_hour_str"] = deadline_dt.strftime('%H:%M')
+            task["start_hour_str"] = f"{start_dt.hour:02d}:{start_dt.minute:02d}"
+            task["end_hour_str"] = f"{deadline_dt.hour:02d}:{deadline_dt.minute:02d}"
             
             # Calculate colspan based on 30-minute slots
             total_duration_minutes = task.get("duration", 60)
-            task['colspan'] = max(1, ceil(total_duration_minutes / 30))
-            
+            task['colspan'] = max(1, ceil(total_duration_minutes / 15))
+            #flag
             # Parse reminders
             if not task.get('reminders'):
                 task['reminders'] = []
@@ -542,7 +575,7 @@ def optimize_tasks():
     # Constants for schedule mapping
     SCHEDULE_START_HOUR = 6  # 6 AM
     SCHEDULE_END_HOUR = 22   # 10 PM
-    SLOT_DURATION_MINUTES = 30
+    SLOT_DURATION_MINUTES = 15
     TOTAL_DAILY_SLOTS = (SCHEDULE_END_HOUR - SCHEDULE_START_HOUR) * (60 // SLOT_DURATION_MINUTES)  # 32 slots
 
     def get_slot_index(hour, minute):
@@ -605,32 +638,46 @@ def optimize_tasks():
         
         return True
 
-    def find_empty_slot(schedule, task, preferred_day=None):
-        """Find empty slot for task, starting with preferred day then checking all days"""
-        days_to_check = []
-        
-        if preferred_day:
-            # Check preferred day first
-            days_to_check.append(preferred_day)
-            # Then check other days in order
-            all_days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-            for day in all_days:
-                if day != preferred_day:
-                    days_to_check.append(day)
-        else:
-            # Check all days in order
-            days_to_check = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-        
+    def find_empty_slot(schedule, task, preferred_day=None, preferred_slot=None):
+        """
+        Smarter function to find an empty slot.
+        1. Tries to place the task at the preferred day and time.
+        2. If that fails, searches the rest of the preferred day.
+        3. If that fails, searches all other days.
+        """
         num_slots = task['num_slots']
+        all_days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
         
-        for day in days_to_check:
-            # Try to find empty slot on this day
-            for start_slot in range(0, TOTAL_DAILY_SLOTS - num_slots + 1):
-                if can_place_task(schedule, day, start_slot, num_slots):
-                    return day, start_slot
-        
-        return None, None
+        # Reorder days to start with the preferred one
+        if preferred_day:
+            days_to_check = [preferred_day] + [day for day in all_days if day != preferred_day]
+        else:
+            days_to_check = all_days
 
+        for day in days_to_check:
+            start_search_index = 0
+            # On the preferred day, start searching from the preferred slot
+            if day == preferred_day and preferred_slot is not None:
+                if can_place_task(schedule, day, preferred_slot, num_slots):
+                    return day, preferred_slot # Ideal spot found!
+                # If ideal spot is taken, search from that point forward
+                start_search_index = preferred_slot + 1
+
+            # Search the rest of the day (or the whole day if not preferred)
+            for start_slot in range(start_search_index, TOTAL_DAILY_SLOTS - num_slots + 1):
+                if can_place_task(schedule, day, start_slot, num_slots):
+                    return day, start_slot # Found a spot on this day
+
+            # If it's the preferred day and we still haven't found a spot,
+            # we should also check the slots *before* the preferred time as a last resort.
+            if day == preferred_day and preferred_slot is not None:
+                for start_slot in range(0, preferred_slot):
+                    if can_place_task(schedule, day, start_slot, num_slots):
+                        return day, start_slot
+
+        # If no slot was found on any day
+        return None, None
+    
     def reschedule_flexible_tasks(all_tasks):
         """Main rescheduling function"""
         schedule = initialize_schedule()
@@ -644,10 +691,10 @@ def optimize_tasks():
         
         print(f"📊 Task breakdown: {len(fixed_tasks)} fixed/high-priority, {len(flexible_tasks)} flexible/low-priority")
         
-        # Process fixed/high-priority tasks first
+        # --- (The 'fixed_tasks' processing part remains unchanged) ---
         placed_tasks = []
         for task in fixed_tasks:
-            # Calculate original position
+            # ... (no changes needed here) ...
             deadline_dt = datetime.strptime(task["deadline"], "%Y-%m-%d %H:%M")
             start_dt = deadline_dt - timedelta(minutes=task.get("duration", 60))
             
@@ -655,21 +702,20 @@ def optimize_tasks():
             original_slot = get_slot_index(start_dt.hour, start_dt.minute)
             task['num_slots'] = get_num_slots_for_duration(task.get("duration", 60))
             
-            # Try to place at original position
             if original_slot >= 0 and can_place_task(schedule, original_day, original_slot, task['num_slots']):
                 place_task(schedule, task, original_day, original_slot)
                 placed_tasks.append(task['id'])
                 print(f"✅ Fixed task placed: '{task['title']}' at {original_day} {task['start_hour_str']}")
             else:
-                # Fixed task can't be moved, so find any available slot
-                found_day, found_slot = find_empty_slot(schedule, task, original_day)
+                found_day, found_slot = find_empty_slot(schedule, task, original_day, original_slot)
                 if found_day and found_slot is not None:
                     place_task(schedule, task, found_day, found_slot)
                     placed_tasks.append(task['id'])
                     print(f"🔄 Fixed task moved: '{task['title']}' to {found_day} {task['start_hour_str']}")
                 else:
                     print(f"❌ Could not place fixed task: '{task['title']}'")
-        
+
+        # --- MODIFICATION IS HERE ---
         # Process flexible tasks
         for task in flexible_tasks:
             if task['id'] in placed_tasks:
@@ -680,21 +726,27 @@ def optimize_tasks():
             start_dt = deadline_dt - timedelta(minutes=task.get("duration", 60))
             
             original_day = start_dt.strftime('%A')
-            original_slot = get_slot_index(start_dt.hour, start_dt.minute)
+            original_slot = get_slot_index(start_dt.hour, start_dt.minute) # This is the user's preferred slot
             task['num_slots'] = get_num_slots_for_duration(task.get("duration", 60))
             
-            # Try to find empty slot starting with original day
-            found_day, found_slot = find_empty_slot(schedule, task, original_day)
+            # Use the NEW, smarter find_empty_slot function
+            found_day, found_slot = find_empty_slot(schedule, task, original_day, original_slot)
             
             if found_day and found_slot is not None:
                 place_task(schedule, task, found_day, found_slot)
                 placed_tasks.append(task['id'])
-                print(f"✅ Flexible task placed: '{task['title']}' at {found_day} {task['start_hour_str']}")
+                
+                # Your logging logic remains perfect
+                if found_day == original_day and found_slot == original_slot:
+                    print(f"✅ Flexible task placed: '{task['title']}' at its original time {found_day} {task['start_hour_str']}")
+                else:
+                    print(f"🔄 Flexible task rescheduled: '{task['title']}' to {found_day} {task['start_hour_str']}")
             else:
                 print(f"❌ Could not place flexible task: '{task['title']}'")
         
+        
         return schedule
-
+    
     def save_optimized_schedule(optimized_schedule):
         """Save the optimized schedule to database"""
         conn = get_db()
@@ -947,9 +999,9 @@ def api_current_tasks():
     start_of_week = now - timedelta(days=now.weekday())
     end_of_week = start_of_week + timedelta(days=6, hours=23, minutes=59, seconds=59)
     
+    # Only select columns that actually exist in the database
     tasks = conn.execute("""
-        SELECT id, title, category, deadline, score, isCompleted,
-               duration, start_hour_int, end_hour_int
+        SELECT id, title, category, deadline, score, isCompleted, duration
         FROM tasks
         WHERE deadline BETWEEN ? AND ?
         ORDER BY deadline ASC
@@ -957,13 +1009,26 @@ def api_current_tasks():
     
     tasks_list = []
     for task in tasks:
-        task_dict = dict(task)
-        # Parse deadline for frontend
+        task_dict = dict(task)  # Convert to dict to use .get() method
+        
         try:
+            # Parse deadline and calculate start/end times
             deadline_dt = datetime.strptime(task_dict['deadline'], "%Y-%m-%d %H:%M")
             task_dict['deadline'] = deadline_dt.isoformat()
-        except:
-            pass
+            
+            # Calculate start time from duration
+            duration_minutes = task_dict.get('duration', 60)
+            start_dt = deadline_dt - timedelta(minutes=duration_minutes)
+            
+            # Add calculated fields for frontend
+            task_dict['start_hour_int'] = start_dt.hour
+            task_dict['end_hour_int'] = deadline_dt.hour
+            
+        except Exception as e:
+            print(f"⚠️ Error computing start time for task {task_dict.get('title', 'Unknown')}: {e}")
+            # Set default values if calculation fails
+            task_dict['start_hour_int'] = 9
+            task_dict['end_hour_int'] = 10
             
         tasks_list.append(task_dict)
     
@@ -977,18 +1042,36 @@ def generate_advice_from_weights():
 
     advice = []
 
-    if weights.get('flexibility_weight', 1.0) < 0.8:
+    # Get current thresholds or use defaults
+    urgency_threshold = 1.0
+    importance_threshold = 1.0
+    flexibility_threshold = 0.8
+    category_work_threshold = 1.5
+    category_education_threshold = 1.5
+    duration_threshold_pref_short = 1.2
+    duration_threshold_pref_long = 0.8
+
+    # Using confidence if available to make advice more nuanced
+    # For now, we'll use a simplified check
+    
+    if weights.get('flexibility_weight', 1.0) < flexibility_threshold:
         advice.append("You tend to delay flexible tasks — try scheduling them earlier.")
-    if weights.get('urgency_weight', 1.0) > 1.0:
+    if weights.get('urgency_weight', 1.0) > urgency_threshold:
         advice.append("You often rush to finish tasks close to their deadlines — set earlier reminders.")
-    if weights.get('category_Work', 1.0) > 1.5:
+    if weights.get('category_Work', 1.0) > category_work_threshold:
         advice.append("Work tasks dominate your schedule — keep an eye on rest and study balance.")
-    if weights.get('category_Education', 1.0) > 1.5:
+    if weights.get('category_Education', 1.0) > category_education_threshold:
         advice.append("You prioritize education tasks effectively — keep it up!")
+    if weights.get('duration_weight', 1.0) > duration_threshold_pref_short:
+        advice.append("You seem to prefer shorter tasks. Consider breaking down larger tasks.")
+    elif weights.get('duration_weight', 1.0) < duration_threshold_pref_long:
+        advice.append("You handle long tasks well. Ensure you schedule sufficient focus time.")
+
     if not advice:
         advice.append("Your task patterns look well-balanced. Stay consistent!")
 
     return " ".join(advice)
+
 
 def generate_analytics_summary():
     """Simple decision-based analytics summary"""
@@ -1048,29 +1131,76 @@ def generate_analytics_summary():
 @app.route("/api/advice")
 def api_advice():
     return jsonify({"advice": generate_advice_from_weights()})
-# WEEKLY ML TRAINING (COMMENTED OUT FOR NOW)
-# def background_ml_training():
-#     """Background thread for ML training - runs weekly and scans current week tasks"""
-#     while True:
-#         time.sleep(604800)  # Check every week (7 days in seconds)
-#         with app.app_context():
-#             # Scan for tasks in the current week (Monday to Sunday)
-#             now = datetime.now()
-#             start_of_week = now - timedelta(days=now.weekday())
-#             end_of_week = start_of_week + timedelta(days=6, hours=23, minutes=59, seconds=59)
-#             
-#             db = get_db()
-#             weekly_task_count = db.execute("""
-#                 SELECT COUNT(*) FROM tasks 
-#                 WHERE deadline BETWEEN ? AND ?
-#             """, (start_of_week.strftime("%Y-%m-%d %H:%M"), end_of_week.strftime("%Y-%m-%d %H:%M"))).fetchone()[0]
-#             
-#             if weekly_task_count >= 5:  # Train if 5+ tasks in current week
-#                 print(f"🔄 Weekly ML training triggered - {weekly_task_count} tasks this week")
-#                 train_ml()
-#             else:
-#                 print(f"📊 Weekly ML training skipped: Only {weekly_task_count} tasks this week")
-# 
+
+def background_ml_training():
+    """Background thread for ML training - runs monthly and scans last 30 days tasks"""
+    # Use 30 days in seconds for approximately a month
+    MONTHLY_INTERVAL_SECONDS = 30 * 24 * 60 * 60
+    while True:
+        time.sleep(MONTHLY_INTERVAL_SECONDS)  
+        with app.app_context():
+            # Scan for tasks in the last 30 days
+            now = datetime.now()
+            start_of_period = now - timedelta(days=30)
+            
+            db = get_db()
+            recent_task_count = db.execute("""
+                SELECT COUNT(*) FROM tasks 
+                WHERE created_at BETWEEN ? AND ?
+            """, (start_of_period.strftime("%Y-%m-%d %H:%M:%S"), now.strftime("%Y-%m-%d %H:%M:%S"))).fetchone()[0]
+            
+            if recent_task_count >= 5:  # Train if 5+ tasks in the last 30 days
+                print(f"🔄 Monthly ML training triggered - {recent_task_count} tasks in last 30 days")
+                train_ml()
+            else:
+                print(f"📊 Monthly ML training skipped: Only {recent_task_count} tasks in last 30 days")
+ 
+
+@app.route('/update-task', methods=['POST'])
+def update_task():
+    """Handle task updates"""
+    try:
+        task_id = int(request.form.get('task_id'))
+        title = request.form.get('title')
+        deadline_str = request.form.get('deadline')
+        duration_hours = int(request.form.get('duration_hours', 0))
+        duration_minutes = int(request.form.get('duration_minutes', 0))
+        task_type = request.form.get('task_type')
+        category = request.form.get('category')
+        reminders = request.form.getlist('reminders[]')
+        
+        # Parse deadline
+        deadline = datetime.fromisoformat(deadline_str)
+        
+        # Calculate duration display
+        duration_display = f"{duration_hours}h {duration_minutes}m"
+        total_duration_minutes = (duration_hours * 60) + duration_minutes
+        
+        # Load tasks and find the one to update
+        tasks = get_db()
+        task_index = next((i for i, t in enumerate(tasks) if t['id'] == task_id), None)
+        
+        if task_index is not None:
+            # Update task
+            tasks[task_index].update({
+                'title': title,
+                'deadline': deadline,
+                'duration': duration_display,
+                'duration_minutes': total_duration_minutes,
+                'is_flexible': task_type == 'flexible',
+                'category': category,
+                'reminders': reminders,
+                'updated_at': datetime.now()
+            })
+            
+            submit(tasks)
+            return jsonify({'success': True})
+        else:
+            return jsonify({'error': 'Task not found'}), 404
+            
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+
 
 # App Entry Point
 # -------------------------
@@ -1078,7 +1208,7 @@ if __name__ == "__main__":
     init_db()
     os.makedirs('models', exist_ok=True) 
 
-# ml_thread = threading.Thread(target=background_ml_training, daemon=True)
-# ml_thread.start()
+    ml_thread = threading.Thread(target=background_ml_training, daemon=True)
+    ml_thread.start()
 
     app.run(debug=True)

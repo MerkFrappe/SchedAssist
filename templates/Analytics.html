@@ -47,16 +47,17 @@
         }
 
         .pattern-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background-color: #1d2d44;
             color: white;
             border-radius: 15px;
             padding: 25px;
             margin-bottom: 20px;
             box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            color: black;
         }
 
         .pattern-grid {
-            background: rgba(255, 255, 255, 0.1);
+            background: #748cab;
             border-radius: 10px;
             padding: 20px;
             margin-top: 15px;
@@ -99,22 +100,25 @@
             border-radius: 10px;
             padding: 15px;
             margin-top: 15px;
+            text-color: black;
         }
 
         .category-insight {
-            background: white;
-            border-radius: 10px;
+            background: #f0ebd8;
+            border-radius: 20px;
             padding: 20px;
             margin-top: 15px;
-            border-left: 4px solid #4a7d7d;
+            color: white;
+            font-weight: bold;
         }
 
         .insight-card {
-            background: white;
+            background-color: #f0ebd8;
             border-radius: 10px;
             padding: 15px;
             height: 100%;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            
         }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -150,9 +154,7 @@
         <!-- Personalized Welcome Card -->
         <div class="welcome-card">
             <div class="row align-items-center">
-                <div class="col-md-2 text-center">
-                    <div class="user-avatar" id="userAvatar">👤</div>
-                </div>
+        
                 <div class="col-md-10">
                     <h4 id="welcomeMessage">Welcome back!</h4>
                     <p id="userInsight" class="mb-0">Checking your productivity patterns...</p>
@@ -166,8 +168,7 @@
                 <div class="card mb-4 bg-dark text-white">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <span>Weekly Completion Rate</span>
-                        <span class="badge bg-primary fs-6">{{ day_counts | sum if day_counts else 0 }} completed this
-                            week</span>
+                        <span class="badge bg-white fs-6" style="color: black;">{{ day_counts | sum if day_counts else 0 }} completed this week</span>
                     </div>
                     <div class="card-body">
                         <div class="chart-container">
@@ -245,12 +246,8 @@
                             <p class="card-text mb-0">
                                 {% if analytics_summary.weights.urgency_weight > 1.0 %}
                                 ⚡ Focusing on urgent deadlines
-                                {% elif analytics_summary.weights.urgency_weight < 0.5 %}
-                                ⏳ Balanced deadline approach
-                                {% else %}
-                                📅 Normal deadline sensitivity
-                                {% endif %}
-                            </p>
+                                {% elif analytics_summary.weights.urgency_weight < 0.5 %} ⏳ Balanced deadline approach
+                                    {% else %} 📅 Normal deadline sensitivity {% endif %} </p>
                         </div>
                     </div>
 
@@ -264,12 +261,8 @@
                             <p class="card-text mb-0">
                                 {% if analytics_summary.weights.importance_weight > 1.0 %}
                                 🎯 High-value task focus
-                                {% elif analytics_summary.weights.importance_weight < 0.5 %}
-                                📊 Balanced importance
-                                {% else %}
-                                💼 Standard priority handling
-                                {% endif %}
-                            </p>
+                                {% elif analytics_summary.weights.importance_weight < 0.5 %} 📊 Balanced importance {%
+                                    else %} 💼 Standard priority handling {% endif %} </p>
                         </div>
                     </div>
 
@@ -305,12 +298,8 @@
                                 {% set duration = analytics_summary.weights.get('duration_weight', 1) %}
                                 {% if duration > 1.2 %}
                                 ⏱️ Prefer quick tasks
-                                {% elif duration < 0.8 %}
-                                🧠 Prefer longer tasks
-                                {% else %}
-                                ⏳ Balanced duration
-                                {% endif %}
-                            </p>
+                                {% elif duration < 0.8 %} 🧠 Prefer longer tasks {% else %} ⏳ Balanced duration {% endif
+                                    %} </p>
                         </div>
                     </div>
                 </div>

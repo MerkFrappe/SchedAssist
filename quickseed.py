@@ -60,36 +60,45 @@ def seed_tasks():
     conn = sqlite3.connect(DATABASE)
     c = conn.cursor()
     
-    tasks = [
-           ("Urgent Client Deliverable", "2025-01-20 17:00", 120, 0, "1d,2h", "Work", 95, 1),
-    ("Team Strategy Meeting", "2025-01-20 10:00", 90, 0, "30m", "Work", 85, 1),
-    ("Project Deadline", "2025-01-21 23:59", 180, 0, "1d,3h", "Work", 98, 1),
-    ("Client Presentation Prep", "2025-01-22 14:00", 120, 0, "1h", "Work", 88, 1),
-    ("Budget Review", "2025-01-23 16:00", 60, 0, "2h", "Work", 82, 1),
-    ("Weekly Report", "2025-01-24 12:00", 45, 0, "1h", "Work", 75, 1),
-    ("System Update", "2025-01-25 09:00", 90, 0, "30m", "Work", 78, 0),  # Only 1 incomplete
-    ("Code Deployment", "2025-01-26 15:00", 60, 0, "1h", "Work", 80, 1),
-
-    # PERSONAL/HOME TASKS
-     ("Clean Garage", "2025-01-20 15:00", 120, 1, "none", "Personal", 30, 0),
-    ("Organize Files", "2025-01-21 16:00", 90, 1, "none", "Personal", 25, 0),
-    ("Learn Guitar", "2025-01-22 19:00", 60, 1, "none", "Personal", 35, 1),  # Only 1 completed
-    ("Meditation Practice", "2025-01-23 07:00", 30, 1, "none", "Personal", 20, 0),
-    ("Journal Writing", "2025-01-24 21:00", 45, 1, "none", "Personal", 28, 0),
-    ("Home DIY Project", "2025-01-25 14:00", 180, 1, "none", "Personal", 40, 0),
-
-    # EDUCATION/SKILL DEVELOPMENT
-    ("Learn New Framework Tutorial", "2025-01-21 15:00", 90, 1, "1h", "Education", 68, 0),
-    ("Read Industry Articles", "2025-01-22 16:00", 45, 1, "none", "Education", 60, 0),
-    ("Online Course - Advanced Skills", "2025-01-23 19:00", 120, 1, "1h", "Education", 75, 0),
-    ("Practice Presentation Skills", "2025-01-25 16:30", 60, 1, "30m", "Education", 65, 0),
-
-    # COMPLETED TASKS (for ML training)
-    ("Update Work Portfolio", "2025-01-19 15:00", 90, 1, "1h", "Work", 72, 1),
-    ("Research New Tools", "2025-01-19 11:00", 60, 1, "none", "Education", 58, 1),
-    ("Plan Weekly Meals", "2025-01-19 18:00", 30, 1, "none", "Personal", 35, 1),
-    ("Clear Email Inbox", "2025-01-19 10:00", 45, 1, "none", "Work", 62, 1)
-    ]
+    tasks =  [
+    # ========== WORK TASKS (Balanced completion) ==========
+    ("Morning work planning", "2025-10-17 09:00", 60, 0, "30m", "Work", 75, 1),
+    ("Client meeting preparation", "2025-10-17 14:00", 90, 0, "1h", "Work", 82, 1),
+    ("Team collaboration session", "2025-10-18 10:00", 120, 0, "1d", "Work", 78, 1),
+    ("Project deadline", "2025-10-19 17:00", 180, 0, "1d,2h", "Work", 88, 1),
+    ("Weekly report submission", "2025-10-20 16:00", 45, 1, "3h", "Work", 70, 0),  # Will do tomorrow
+    ("Skill development workshop", "2025-10-21 13:00", 120, 0, "1d", "Work", 80, 1),
+    ("Work emails organization", "2025-10-22 08:00", 60, 1, "none", "Work", 65, 1),
+    ("Networking event", "2025-10-23 18:00", 90, 0, "1d", "Work", 72, 1),
+    
+    # ========== EDUCATION TASKS (Consistent learning) ==========
+    ("Online course module", "2025-10-17 20:00", 60, 1, "1h", "Education", 68, 1),
+    ("Read industry book", "2025-10-18 21:00", 45, 1, "none", "Education", 62, 1),
+    ("Research new technology", "2025-10-19 19:00", 90, 1, "1d", "Education", 75, 1),
+    ("Practice new skill", "2025-10-20 20:30", 60, 1, "30m", "Education", 70, 0),  # Skipped for rest
+    ("Watch educational video", "2025-10-21 21:00", 30, 1, "none", "Education", 58, 1),
+    ("Study group participation", "2025-10-22 19:00", 120, 0, "1d", "Education", 78, 1),
+    ("Learning journal update", "2025-10-23 20:00", 30, 1, "none", "Education", 65, 1),
+    
+    # ========== PERSONAL TASKS (Good self-care) ==========
+    ("Morning workout", "2025-10-17 07:00", 60, 1, "none", "Personal", 55, 1),
+    ("Grocery shopping", "2025-10-18 17:00", 45, 1, "2h", "Personal", 48, 1),
+    ("Cook healthy dinner", "2025-10-19 18:30", 60, 1, "1h", "Personal", 52, 1),
+    ("Call family", "2025-10-20 20:00", 30, 1, "1h", "Personal", 58, 1),
+    ("Meditation session", "2025-10-21 07:30", 20, 1, "none", "Personal", 45, 0),  # Overslept
+    ("Home cleaning", "2025-10-22 16:00", 90, 1, "none", "Personal", 50, 1),
+    ("Social gathering", "2025-10-23 19:00", 120, 0, "1d", "Personal", 62, 1),
+    ("Personal finance review", "2025-10-24 18:00", 60, 1, "1d", "Personal", 68, 1),
+    ("Hobby time (guitar)", "2025-10-25 20:00", 45, 1, "none", "Personal", 42, 1),
+    ("Weekend hiking trip", "2025-10-26 09:00", 240, 0, "1d", "Personal", 72, 1),
+    ("Read fiction book", "2025-10-27 21:00", 60, 1, "none", "Personal", 48, 1),
+    ("Self-reflection journal", "2025-10-28 22:00", 30, 1, "none", "Personal", 55, 0),  # Too tired
+    
+    # ========== EXTRA TASKS ==========
+    ("Work project brainstorming", "2025-10-29 10:00", 90, 0, "30m", "Work", 79, 1),
+    ("Learn new software tool", "2025-10-29 20:00", 60, 1, "none", "Education", 74, 1),
+    ("Plan next vacation", "2025-10-30 19:00", 45, 1, "none", "Personal", 60, 1)
+]
     
     # Clear existing tasks
     c.execute("DELETE FROM tasks")
