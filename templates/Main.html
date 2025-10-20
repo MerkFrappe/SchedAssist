@@ -12,7 +12,7 @@
     <link rel="stylesheet"
         href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
 
-     <style>
+    <style>
         .logo {
             width: 120px;
             height: 120px;
@@ -146,8 +146,47 @@
             justify-content: center;
         }
 
+	/* Completed task styling */
+.task-block.completed-task {
+    opacity: 0.6;
+    filter: grayscale(0.7);
+    background-color: #e9ecef !important;
+    color: #6c757d !important;
+    border: 1px dashed #6c757d !important;
+    text-decoration: line-through;
+}
+
+.task-block.completed-task:hover {
+    opacity: 0.8;
+    filter: grayscale(0.5);
+}
+
+.completed-check {
+    font-weight: bold;
+    margin-left: 4px;
+    font-size: 0.9em;
+}
+
+/* Keep the original category colors but faded */
+.task-block.completed-task.Education {
+    background-color: rgba(74, 125, 125, 0.3) !important;
+}
+
+.task-block.completed-task.Work {
+    background-color: rgba(220, 53, 69, 0.3) !important;
+}
+
+.task-block.completed-task.Personal {
+    background-color: rgba(255, 193, 7, 0.3) !important;
+}
+
+.task-block.completed-task.Health {
+    background-color: rgba(25, 135, 84, 0.3) !important;
+}
+
         .time-column-standalone .time-label {
-            height: 30px; /* Changed to match 30-minute slot height */
+            height: 31px;
+            /* Changed to match 30-minute slot height */
             padding: 5px;
             text-align: center;
             background: #f8f9fa;
@@ -161,16 +200,18 @@
         .schedule-grid {
             display: grid;
             grid-template-columns: repeat(7, 1fr);
-            grid-template-rows: 50px repeat(64, 15px); /* 1 header row + 32 slots * 30px height */
+            grid-template-rows: 50px repeat(64, 15px);
+            /* 1 header row + 32 slots * 30px height */
             gap: 1px;
             background-color: #ddd;
             border: 1px solid #ddd;
             width: 100%;
             border-radius: 0px 10px 0px 0px;
             flex-grow: 1;
-	        position: relative; 
-    	    z-index: 1;
-            min-width: 700px; /* Minimum width for the grid content to prevent squishing */
+            position: relative;
+            z-index: 1;
+            min-width: 700px;
+            /* Minimum width for the grid content to prevent squishing */
         }
 
         .day-label {
@@ -188,15 +229,17 @@
             align-items: center;
             justify-content: center;
             /* Ensure day labels have a fixed width or can shrink */
-            width: 100%; /* Occupy full column width */
+            width: 100%;
+            /* Occupy full column width */
         }
 
         .grid-cell {
             background: white;
             border-bottom: 1px solid #eee;
-	        position: relative;
-    	    z-index: 1;
-            height: 15px; /* Match slot height */
+            position: relative;
+            z-index: 1;
+            height: 15px;
+            /* Match slot height */
         }
 
         /* Task Blocks */
@@ -205,9 +248,12 @@
             border: 1px solid transparent;
             transition: all 0.2s ease-in-out;
             color: white;
-            padding: 4px 3px; /* Adjusted padding for smaller slots */
-            border-radius: 4px; /* Adjusted border-radius */
-            font-size: 0.7rem; /* Adjusted font size */
+            padding: 4px 3px;
+            /* Adjusted padding for smaller slots */
+            border-radius: 4px;
+            /* Adjusted border-radius */
+            font-size: 0.7rem;
+            /* Adjusted font size */
             font-weight: 600;
             display: flex;
             flex-direction: column;
@@ -215,19 +261,20 @@
             z-index: 1;
             margin: 1px;
             overflow: hidden;
-	        position: relative;
-    	    z-index: 2; 
-    	    margin: 1px 2px;
+            position: relative;
+            z-index: 2;
+            margin: 1px 2px;
             display: flex;
             align-items: center;
             justify-content: center;
             text-align: center;
             line-height: 1.2;
         }
-	
-	.task-block:hover {
-    	    z-index: 3; /* Even higher on hover */
-	}
+
+        .task-block:hover {
+            z-index: 3;
+            /* Even higher on hover */
+        }
 
         .task-block.selected {
             border: 2px solid #007bff;
@@ -276,58 +323,78 @@
         }
 
         #notificationContainer {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    z-index: 9999;
-}
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+        }
 
-.alert-notification {
-    background: #6c63ff;
-    color: white;
-    padding: 15px 20px;
-    border-radius: 10px;
-    font-weight: 600;
-    margin-bottom: 10px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    max-width: 300px;
-    animation: slideInRight 0.3s ease-out;
-}
+        .alert-notification {
+            background: #6c63ff;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            max-width: 300px;
+            animation: slideInRight 0.3s ease-out;
+        }
 
-@keyframes slideInRight {
-    from {
-        transform: translateX(100%);
-        opacity: 0;
-    }
-    to {
-        transform: translateX(0);
-        opacity: 1;
-    }
-}
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
 
-@keyframes slideOutRight {
-    from {
-        transform: translateX(0);
-        opacity: 1;
-    }
-    to {
-        transform: translateX(100%);
-        opacity: 0;
-    }
-}
-@keyframes urgent-pulse {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.02); }
-}
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
 
-@keyframes shake {
-    0%, 100% { transform: translateX(0); }
-    25% { transform: translateX(-3px); }
-    75% { transform: translateX(3px); }
-}
+        @keyframes slideOutRight {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+
+        @keyframes urgent-pulse {
+
+            0%,
+            100% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.02);
+            }
+        }
+
+        @keyframes shake {
+
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+
+            25% {
+                transform: translateX(-3px);
+            }
+
+            75% {
+                transform: translateX(3px);
+            }
+        }
 
 
         .urgent-task {
@@ -344,35 +411,42 @@
                     rgba(220, 53, 69, 0.1) 20px) !important;
         }
 
-	    .calendar-scroll-container {
+        .calendar-scroll-container {
             width: 100%;
-            overflow-x: auto; 
-            overflow-y: auto; 
-            max-height: 100vh; 
+            overflow-x: auto;
+            overflow-y: auto;
+            max-height: 100vh;
             border: 1px solid #ddd;
             border-radius: 10px;
             background: white;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-	    }
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
 
-	.calendar-scroll-container::-webkit-scrollbar {
-        width: 8px;
-        height: 8px;
-    }
+        .calendar-scroll-container::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
 
-    .calendar-scroll-container::-webkit-scrollbar-track {
-        background: #f1f1f1;
-        border-radius: 4px;
-    }
+        .calendar-scroll-container::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
 
-    .calendar-scroll-container::-webkit-scrollbar-thumb {
-        background: #c1c1c1;
-        border-radius: 4px;
-    }
+        .calendar-scroll-container::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 4px;
+        }
 
-    .calendar-scroll-container::-webkit-scrollbar-thumb:hover {
-        background: #a8a8a8;
-    }
+        .calendar-scroll-container::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+
+        .custom-alert {
+   
+    background: linear-gradient(135deg, #30c5d2, #471069);
+        font-weight: bold;
+        color: white;
+        }
 
 
         @keyframes pulse {
@@ -433,7 +507,7 @@
 
 <body class="bg-beige">
 
-	  <!-- Notification Container -->
+    <!-- Notification Container -->
     <div id="notificationContainer" style="position: fixed; top: 20px; right: 20px; z-index: 9999;"></div>
 
     <div class="d-flex">
@@ -458,15 +532,14 @@
         <main class="flex-grow-1 p-5 text-dark">
             <h2>Weekly Tasks</h2>
             <p><strong>{{ formatted_date }}</strong> | Week {{ week_number }}</p>
-            
-            
-   {% if advice_text and advice_text.strip() %}
-<div id="personalizedAdviceAlert" class="alert alert-info alert-dismissible fade show mb-4" role="alert">
-    <h4 class="alert-heading">Personalized Advice</h4>
-    {{ advice_text }}
-    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-</div>
-{% endif %}
+
+
+            {% if advice_text and advice_text.strip() %}
+            <div id="personalizedAdviceAlert" class="alert custom-alert alert-dismissible fade show mb-4" role="alert">
+                <h4 class="alert-heading" style="font-weight: bold;">Personalized Advice</h4>
+                {{ advice_text }}
+            </div>
+            {% endif %}
 
             <div class="main-content-wrapper">
                 <!-- Left Panel -->
@@ -492,7 +565,8 @@
                         </div>
                     </div>
 
-                    <div class="bg-dark text-light p-4 mt-3" style="min-width: 250px; max-width: 300px;"> <!-- Adjusted width -->
+                    <div class="bg-dark text-light p-4 mt-3" style="min-width: 250px; max-width: 300px;">
+                        <!-- Adjusted width -->
                         <h6>Weekly Actions</h6>
                         <button id="taskHierarchyBtn" class="btn btn-success mt-3 w-100" data-bs-toggle="modal"
                             data-bs-target="#taskHierarchyModal">Task Hierarchy</button>
@@ -511,65 +585,70 @@
                             <!-- Time Column -->
                             <div class="time-column-standalone">
                                 <div class="day-label bg-dark text-white time-header-sticky">Time</div>
-                                {% for i in range(16) %} 
-                                    {% set hour = 6 + i %}
-                                    <div class="time-label">{{ "%02d:00"|format(hour) }}</div>
-                                    <div class="time-label">{{ "%02d:30"|format(hour) }}</div>
+                                {% for i in range(16) %}
+                                {% set hour = 6 + i %}
+                                <div class="time-label">{{ "%02d:00"|format(hour) }}</div>
+                                <div class="time-label">{{ "%02d:30"|format(hour) }}</div>
                                 {% endfor %}
                             </div>
 
                             <!-- Schedule Grid -->
                             <div class="schedule-grid">
                                 <!-- Day Labels -->
-                                {% set day_columns = {'Monday': 1, 'Tuesday': 2, 'Wednesday': 3, 'Thursday': 4, 'Friday': 5, 'Saturday': 6, 'Sunday': 7} %}
-                                
-                                {% for day in ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'] %}
-                                <div class="day-label" style="grid-column: {{ day_columns[day] }}; grid-row: 1;">{{ day }}</div>
+                                {% set day_columns = {'Monday': 1, 'Tuesday': 2, 'Wednesday': 3, 'Thursday': 4,
+                                'Friday': 5, 'Saturday': 6, 'Sunday': 7} %}
+
+                                {% for day in ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday']
+                                %}
+                                <div class="day-label" style="grid-column: {{ day_columns[day] }}; grid-row: 1;">{{ day
+                                    }}</div>
                                 {% endfor %}
 
                                 <!-- Grid cells -->
-                                
-{% for i in range(64) %} {# 64 slots for 16 hours * 4 (15-minute intervals) #}
-    {% set current_grid_row = i + 2 %} {# +2 because grid-row starts after header #}
-    {% for day in ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'] %}
-    <div class="grid-cell"
-        style="grid-column: {{ day_columns[day] }}; grid-row: {{ current_grid_row }};">
-    </div>
-    {% endfor %}
-{% endfor %}
+
+                                {% for i in range(64) %} {# 64 slots for 16 hours * 4 (15-minute intervals) #}
+                                {% set current_grid_row = i + 2 %} {# +2 because grid-row starts after header #}
+                                {% for day in ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday']
+                                %}
+                                <div class="grid-cell"
+                                    style="grid-column: {{ day_columns[day] }}; grid-row: {{ current_grid_row }};">
+                                </div>
+                                {% endfor %}
+                                {% endfor %}
                                 <!-- Tasks -->
-     <!-- Corrected Jinja2 task block -->
+                                <!-- Corrected Jinja2 task block -->
+                               <!-- In the task block section -->
 {% for task in tasks %}
-    {% if task.weekday and task.start_hour_int is defined and task.end_hour_int is defined %}
-        {% set start_minutes_from_6am = (task.start_hour_int - 6) * 60 + task.start_minute_int %}
-        {% set duration_minutes = task.duration | default(60) %}
-        
-        {# Calculate grid positions with 15-minute precision #}
-        {% set start_slot_index = (start_minutes_from_6am // 15) + 1 %} {# +1 for header row #}
-        {% set num_slots = (duration_minutes + 14) // 15 %} {# Round up to nearest 15 minutes #}
-        {% set num_slots = num_slots if num_slots > 0 else 1 %}
-        
-        {% set day_col = day_columns[task.weekday] %}
-        <div class="task-block {{ task.category }} 
-            {% if task.score >= 70 %}score-critical
-            {% elif task.score >= 40 %}score-high
-            {% elif task.score >= 10 %}score-medium
-            {% else %}score-low{% endif %}"
-            style="grid-column: {{ day_col }}; grid-row: {{ start_slot_index }} / span {{ num_slots }};"
-            data-task-id="{{ task.id }}" 
-            data-title="{{ task.title }}"
-            data-deadline="{{ task.deadline }}"
-            data-reminders='{{ task.reminders | default("[]") }}'
-            data-score="{{ "%.1f"|format(task.score|float) }}"
-            data-start-time="{{ task.start_hour_str }}"
-            data-end-time="{{ task.end_hour_str }}"
-            data-category="{{ task.category }}"
-            data-duration="{{ task.duration | default(60) }}">
-            {{ task.title }}
-        </div>
-    {% endif %}
+{% if task.weekday and task.start_hour_int is defined and task.end_hour_int is defined %}
+{% set start_minutes_from_6am = (task.start_hour_int - 6) * 60 + task.start_minute_int %}
+{% set duration_minutes = task.duration | default(60) %}
+
+{# Calculate grid positions with 15-minute precision #}
+{% set start_slot_index = (start_minutes_from_6am // 15) + 1 %}
+{% set num_slots = (duration_minutes + 14) // 15 %}
+{% set num_slots = num_slots if num_slots > 0 else 1 %}
+
+{% set day_col = day_columns[task.weekday] %}
+<div class="task-block {{ task.category }} 
+    {% if task.completed %}completed-task{% endif %}
+    {% if task.score >= 70 %}score-critical
+    {% elif task.score >= 40 %}score-high
+    {% elif task.score >= 10 %}score-medium
+    {% else %}score-low{% endif %}"
+    style="grid-column: {{ day_col }}; grid-row: {{ start_slot_index }} / span {{ num_slots }};"
+    data-task-id="{{ task.id }}" data-title="{{ task.title }}"
+    data-deadline="{{ task.deadline }}"
+    data-reminders='{{ task.reminders | default("[]") }}' data-score="{{ "
+    %.1f"|format(task.score|float) }}" data-start-time="{{ task.start_hour_str }}"
+    data-end-time="{{ task.end_hour_str }}" data-category="{{ task.category }}"
+    data-duration="{{ task.duration | default(60) }}"
+    {% if task.completed %}data-completed="true"{% endif %}>
+    {{ task.title }}
+    {% if task.completed %}<span class="completed-check">✓</span>{% endif %}
+</div>
+{% endif %}
 {% endfor %}
- </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -590,44 +669,27 @@
             </div>
         </div>
     </div>
-
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-
-
-
-// ML-Powered Notification System
-
+        // ML-Powered Notification System
 class MLNotificationManager {
     constructor() {
-        // Load previously shown notifications from localStorage
         const stored = JSON.parse(localStorage.getItem('shownNotifications') || '[]');
         this.shownNotifications = new Set(stored);
         this.mlData = null;
-        
-        // Check notifications only once on page load
-        this.checkMLNotifications(); 
+        this.checkMLNotifications();
     }
-    
+
     async checkMLNotifications() {
         try {
-            console.log('🧠 Checking ML-powered notifications...');
-            
-            const [mlResponse, tasksResponse, notificationsResponse] = await Promise.all([
-                fetch('/ml_analysis'),
-                fetch('/api/current_tasks'),
+            console.log('🧠 Checking for notifications...');
+            const [notificationsResponse] = await Promise.all([
                 fetch('/api/notifications')
             ]);
-            
-            if (!mlResponse.ok) throw new Error(`Failed to fetch ML analysis: ${mlResponse.statusText}`);
-            if (!tasksResponse.ok) throw new Error(`Failed to fetch current tasks: ${tasksResponse.statusText}`);
-            if (!notificationsResponse.ok) throw new Error(`Failed to fetch basic notifications: ${notificationsResponse.statusText}`);
-            
-            this.mlData = await mlResponse.json();
-            const tasks = await tasksResponse.json();
+            if (!notificationsResponse.ok) throw new Error(`Failed to fetch notifications: ${notificationsResponse.statusText}`);
+
             const basicNotifications = await notificationsResponse.json();
-            
-            // Show basic notifications (deadlines, reminders) only once
+
             basicNotifications.forEach(notification => {
                 const notificationId = `basic_${notification.task_id}_${notification.type}`;
                 if (!this.shownNotifications.has(notificationId)) {
@@ -635,333 +697,174 @@ class MLNotificationManager {
                     this.shownNotifications.add(notificationId);
                 }
             });
-            
-            // Generate ML-powered insights if mlData is available
-            if (this.mlData) {
-                this.generateMLNotifications(tasks);
-            } else {
-                console.warn('ML data not available for generating advanced notifications.');
-            }
-            
-            // Save to localStorage after processing all notifications
+
             localStorage.setItem('shownNotifications', JSON.stringify([...this.shownNotifications]));
-            
+
         } catch (error) {
-            console.error('ML notifications check failed:', error);
+            console.error('Notifications check failed:', error);
         }
     }
-    
-    generateMLNotifications(tasks) {
-        const notifications = [];
-        
-        // 1. Priority Mismatch Detection
-        const priorityMismatch = this.detectPriorityMismatch(tasks);
-        if (priorityMismatch) notifications.push(priorityMismatch);
-        
-        // 2. Schedule Optimization Alerts
-        const scheduleAlert = this.checkScheduleOptimization(tasks);
-        if (scheduleAlert) notifications.push(scheduleAlert);
-        
-        // 3. Productivity Pattern Alerts
-        const patternAlert = this.checkProductivityPatterns();
-        if (patternAlert) notifications.push(patternAlert);
-        
-        // 4. Deadline Risk Assessment
-        const deadlineAlerts = this.assessDeadlineRisks(tasks);
-        notifications.push(...deadlineAlerts);
-        
-        // 5. Focus Area Recommendations
-        const focusAlert = this.generateFocusRecommendations();
-        if (focusAlert) notifications.push(focusAlert);
-        
-        // Show ML notifications only once
-        notifications.forEach(notification => {
-            if (!this.shownNotifications.has(notification.id)) {
-                this.showMLNotification(notification);
-                this.shownNotifications.add(notification.id);
-            }
-        });
-        
-        // Save to localStorage after ML notifications
-        localStorage.setItem('shownNotifications', JSON.stringify([...this.shownNotifications]));
-    }
-    
-    // ... keep all your existing methods (detectPriorityMismatch, checkScheduleOptimization, etc.) exactly the same ...
-    
+
     showBasicNotification(notification) {
         const config = {
-            'reminder': { icon: '⏰', type: 'warning', duration: 8000 },
-            'urgency': { icon: '🚨', type: 'error', duration: 10000 },
-            'overdue': { icon: '🔴', type: 'error', duration: 15000 }
+            'reminder': { icon: '⏰', type: 'warning' },
+            'urgency': { icon: '🚨', type: 'error' },
+            'overdue': { icon: '🔴', type: 'error' }
         };
-        
         const cfg = config[notification.type] || config.reminder;
-        
+
         this.showAlert(
             `${cfg.icon} ${notification.message}`,
             cfg.type,
-            cfg.duration,
-            `basic_${notification.task_id}_${notification.type}`
+            `basic_${notification.task_id}_${notification.type}` // Pass the unique ID
         );
-        
-        // Update task visual
         this.updateTaskVisual(notification);
     }
-    
-    showMLNotification(notification) {
-        this.showAlert(
-            `${notification.icon} ${notification.message}`,
-            notification.type,
-            10000, // 10 seconds for ML notifications
-            notification.id,
-            notification.title,
-            notification.suggestion
-        );
-        
-        // Update task visual if taskId exists
-        if (notification.taskId) {
-            this.updateTaskVisual(notification);
-        }
-    }
-    
-    showAlert(msg, type = 'info', duration = 6000, notificationId = null, title = '', suggestion = '') {
+
+    showAlert(msg, type = 'info', notificationId = null) {
         const alertBox = document.createElement('div');
-        
         const styles = {
             'info': { background: '#6c63ff', icon: 'ℹ️' },
             'success': { background: '#198754', icon: '✅' },
             'warning': { background: '#ffc107', icon: '⚠️', color: '#333' },
             'error': { background: '#dc3545', icon: '❌' }
         };
-        
         const style = styles[type] || styles['info'];
-        
+
         alertBox.className = 'alert-notification';
+        if (notificationId) {
+            // Add a data-attribute to find this alert later
+            alertBox.dataset.notificationId = notificationId;
+        }
+
         alertBox.style.cssText = `
             background: ${style.background};
             color: ${style.color || 'white'};
-            padding: 15px;
+            /* ... other styles remain the same ... */
+            padding: 15px 20px;
             border-radius: 10px;
             font-weight: 600;
             margin-bottom: 10px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-            max-width: 350px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            max-width: 300px;
             animation: slideInRight 0.3s ease-out;
         `;
-        
-        // Enhanced HTML with title and suggestion for ML notifications
-        let alertHTML = '';
-        if (title) {
-            alertHTML = `
-                <div style="display: flex; align-items: flex-start; gap: 10px;">
-                    <span style="font-size: 1.4em;">${msg.split(' ')[0]}</span>
-                    <div style="flex-grow: 1;">
-                        <div style="font-size: 0.9em; opacity: 0.9;">${title}</div>
-                        <div style="font-size: 0.85em; margin: 5px 0;">${msg.replace(/^[^ ]+ /, '')}</div>
-                        <div style="font-size: 0.8em; opacity: 0.8; font-style: italic;">${suggestion}</div>
-                    </div>
-                    <button class="close-notification" style="background: none; border: none; color: inherit; cursor: pointer; font-size: 1.2em;">
-                        &times;
-                    </button>
-                </div>
-            `;
-        } else {
-            alertHTML = `
-                <div style="display: flex; align-items: center; gap: 10px;">
-                    <span style="font-size: 1.2em;">${msg.split(' ')[0]}</span>
-                    <span style="flex-grow: 1;">${msg.replace(/^[^ ]+ /, '')}</span>
-                    <button class="close-notification" style="background: none; border: none; color: inherit; cursor: pointer; font-size: 1.2em;">
-                        &times;
-                    </button>
-                </div>
-            `;
-        }
-        
-        alertBox.innerHTML = alertHTML;
-        
-        const notificationContainer = document.getElementById('notificationContainer');
-        if (notificationContainer) {
-            notificationContainer.appendChild(alertBox);
-        } else {
-            console.error('Notification container not found!');
-            return;
-        }
-        
-        // Add click handler for close button
+        alertBox.innerHTML = `
+            <span style="font-size: 1.2em;">${style.icon}</span>
+            <span style="flex-grow: 1;">${msg}</span>
+            <button class="close-notification" style="background: none; border: none; color: inherit; cursor: pointer; font-size: 1.2em;">&times;</button>
+        `;
+
+        document.getElementById('notificationContainer').appendChild(alertBox);
+
         const closeButton = alertBox.querySelector('.close-notification');
         closeButton.addEventListener('click', () => {
-            // Mark as shown in localStorage when user manually closes
             if (notificationId) {
                 this.shownNotifications.add(notificationId);
                 localStorage.setItem('shownNotifications', JSON.stringify([...this.shownNotifications]));
             }
             alertBox.remove();
         });
-        
-        // Auto-remove after duration
-        setTimeout(() => {
-            if (alertBox.parentElement) {
-                alertBox.style.animation = 'slideOutRight 0.3s ease-in forwards';
-                setTimeout(() => {
-                    if (alertBox.parentElement) {
-                        alertBox.remove();
-                    }
-                }, 300);
-            }
-        }, duration);
+
+        // *** CHANGE 1: REMOVED THE AUTOMATIC TIMEOUT ***
+        // The alert will now stay until the user clicks the close button.
     }
-    
-    getNotificationColor(type) {
-        const colors = {
-            'error': '#dc3545',
-            'warning': '#ffc107',
-            'info': '#6c63ff',
-            'success': '#198754'
-        };
-        return colors[type] || colors.info;
-    }
-    
+
     updateTaskVisual(notification) {
-        if (!notification.taskId) return;
-        
-        const taskElement = document.querySelector(`[data-task-id="${notification.taskId}"]`);
+        if (!notification.task_id) return;
+        const taskElement = document.querySelector(`[data-task-id="${notification.task_id}"]`);
         if (taskElement) {
             taskElement.classList.remove('urgent-task', 'overdue-task');
-            
             if (notification.type === 'urgency' || notification.type === 'error') {
                 taskElement.classList.add('urgent-task');
             } else if (notification.type === 'overdue') {
                 taskElement.classList.add('overdue-task');
             }
-            
             taskElement.classList.add('pulsing');
-            setTimeout(() => {
-                taskElement.classList.remove('pulsing');
-            }, 5000);
+            setTimeout(() => taskElement.classList.remove('pulsing'), 5000);
         }
     }
-    
+
     clearTaskNotifications(taskId) {
-        // Remove notifications for completed/deleted tasks
-        for (const notificationId of Array.from(this.shownNotifications)) {
-            if (notificationId.includes(taskId)) {
-                this.shownNotifications.delete(notificationId);
+        // *** CHANGE 2: ENHANCED LOGIC TO REMOVE NOTIFICATIONS ***
+        
+        // 1. Remove from data source (localStorage)
+        const notificationsToRemove = [];
+        for (const notificationId of this.shownNotifications) {
+            if (notificationId && notificationId.includes(`_${taskId}_`)) {
+                notificationsToRemove.push(notificationId);
             }
         }
-        localStorage.setItem('shownNotifications', JSON.stringify([...this.shownNotifications]));
-    }
-    
-    // Method to reset notifications for a new day (call this daily)
-    resetDailyNotifications() {
-        const today = new Date().toDateString();
-        const lastReset = localStorage.getItem('lastNotificationReset');
-        
-        if (lastReset !== today) {
-            this.shownNotifications.clear();
-            localStorage.setItem('shownNotifications', JSON.stringify([]));
-            localStorage.setItem('lastNotificationReset', today);
+        if (notificationsToRemove.length > 0) {
+            notificationsToRemove.forEach(id => this.shownNotifications.delete(id));
+            localStorage.setItem('shownNotifications', JSON.stringify([...this.shownNotifications]));
+            console.log(`Cleared notifications for task ${taskId} from storage.`);
+        }
+
+        // 2. Remove from the DOM (the visible alerts)
+        const notificationContainer = document.getElementById('notificationContainer');
+        if (notificationContainer) {
+            const activeAlerts = notificationContainer.querySelectorAll('.alert-notification');
+            activeAlerts.forEach(alert => {
+                const alertId = alert.dataset.notificationId;
+                if (alertId && alertId.includes(`_${taskId}_`)) {
+                    alert.remove();
+                    console.log(`Removed visible alert ${alertId} from DOM.`);
+                }
+            });
         }
     }
 }
 
-// Initialize notification manager
-let notificationManager;
-
-document.addEventListener('DOMContentLoaded', () => {
-    notificationManager = new MLNotificationManager();
-    // Optional: Reset notifications daily at midnight
-    notificationManager.resetDailyNotifications();
-});
-
-function showAlert(msg, type = 'info', duration = 6000) {
+// Global function for simple alerts (like success messages)
+function showAlert(msg, type = 'info') {
     const alertBox = document.createElement('div');
-    
     const styles = {
         'info': { background: '#6c63ff', icon: 'ℹ️' },
         'success': { background: '#198754', icon: '✅' },
         'warning': { background: '#ffc107', icon: '⚠️', color: '#333' },
         'error': { background: '#dc3545', icon: '❌' }
     };
-    
     const style = styles[type] || styles['info'];
-    
     alertBox.className = 'alert-notification';
     alertBox.style.cssText = `
-        background: ${style.background};
-        color: ${style.color || 'white'};
-        padding: 15px 20px;
-        border-radius: 10px;
-        font-weight: 600;
-        margin-bottom: 10px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        max-width: 300px;
-        animation: slideInRight 0.3s ease-out;
+        background: ${style.background}; color: ${style.color || 'white'}; padding: 15px 20px;
+        border-radius: 10px; font-weight: 600; margin-bottom: 10px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        display: flex; align-items: center; gap: 10px; max-width: 300px; animation: slideInRight 0.3s ease-out;
     `;
-    
     alertBox.innerHTML = `
         <span style="font-size: 1.2em;">${style.icon}</span>
         <span style="flex-grow: 1;">${msg}</span>
         <button onclick="this.parentElement.remove()" style="background: none; border: none; color: inherit; cursor: pointer; font-size: 1.2em;">&times;</button>
     `;
-    
-    const notificationContainer = document.getElementById('notificationContainer');
-    notificationContainer.appendChild(alertBox);
-    
-    setTimeout(() => {
-        if (alertBox.parentElement) {
-            alertBox.style.animation = 'slideOutRight 0.3s ease-in forwards';
-            setTimeout(() => alertBox.remove(), 300);
-        }
-    }, duration);
+    document.getElementById('notificationContainer').appendChild(alertBox);
+
+    // *** Also removed automatic timeout from this global function ***
 }
 
 // Main DOM Content Loaded
 document.addEventListener('DOMContentLoaded', () => {
-    const tasks = document.querySelectorAll('.task-block');
-    const now = new Date();
-    const notificationContainer = document.getElementById('notificationContainer');
-
-
-
     let selectedTaskId = null;
     const markCompletedBtn = document.getElementById('markCompletedBtn');
     const deleteTaskBtn = document.getElementById('deleteTaskBtn');
     const selectedTaskDetailsContainer = document.getElementById('selectedTaskDetails');
-     const adviceAlert = document.getElementById('personalizedAdviceAlert');
-    // Initialize notification manager (ONE-TIME only)
-    notificationManager = new MLNotificationManager();
     
-    if (adviceAlert) {
-        const today = new Date().toDateString();
-        const lastShownAdvice = localStorage.getItem('lastShownPersonalizedAdvice');
+    // Initialize notification manager
+    const notificationManager = new MLNotificationManager();
 
-        if (lastShownAdvice === today) {
-            // Already shown today, hide it
-            adviceAlert.remove();
-        } else {
-            // Show it and record that it was shown today
-            localStorage.setItem('lastShownPersonalizedAdvice', today);
-            
-            // Add event listener for manual close to immediately hide for future page loads today
-            adviceAlert.querySelector('.btn-close').addEventListener('click', () => {
-                localStorage.setItem('lastShownPersonalizedAdvice', today);
-            });
-        }
-    }
     function updateActionButtons() {
-        const hasSelection = !!selectedTaskId;
-        markCompletedBtn.disabled = !hasSelection;
-        deleteTaskBtn.disabled = !hasSelection;
+        markCompletedBtn.disabled = !selectedTaskId;
+        deleteTaskBtn.disabled = !selectedTaskId;
     }
 
     function updateSelectedTaskDetailsDisplay() {
         if (selectedTaskId) {
             const selectedBlock = document.querySelector(`.task-block[data-task-id="${selectedTaskId}"]`);
             if (selectedBlock) {
-                const title = selectedBlock.dataset.title || 'No title';
+                 const title = selectedBlock.dataset.title || 'No title';
                 const score = selectedBlock.dataset.score || '0';
                 const startTime = selectedBlock.dataset.startTime || 'Unknown';
                 const endTime = selectedBlock.dataset.endTime || 'Unknown';
@@ -973,143 +876,92 @@ document.addEventListener('DOMContentLoaded', () => {
                     const deadline = new Date(selectedBlock.dataset.deadline);
                     if (!isNaN(deadline.getTime())) {
                         deadlineText = deadline.toLocaleDateString('en-US', { 
-                            year: 'numeric', 
-                            month: 'long', 
-                            day: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit'
+                            year: 'numeric', month: 'long', day: 'numeric',
+                            hour: '2-digit', minute: '2-digit'
                         });
                     }
-                } catch (e) {
-                    deadlineText = selectedBlock.dataset.deadline || 'Invalid date';
-                }
+                } catch (e) { /* ignore */ }
 
                 selectedTaskDetailsContainer.innerHTML = `
-                    <h6>Selected Task Details:</h6>
-                    <strong>${title}</strong><br>
-                    <small>Category: ${category}</small><br>
-                    <small>Time: ${startTime} - ${endTime}</small><br>
-                    <small>Duration: ${duration} minutes</small><br>
-                    <small>Priority Score: ${score}</small><br>
+                    <h6>Selected Task Details:</h6> <strong>${title}</strong><br>
+                    <small>Category: ${category}</small><br> <small>Time: ${startTime} - ${endTime}</small><br>
+                    <small>Duration: ${duration} minutes</small><br> <small>Priority Score: ${score}</small><br>
                     <small>Deadline: ${deadlineText}</small>
                 `;
-            } else {
-                selectedTaskDetailsContainer.innerHTML = '<small class="text-danger">Task not found.</small>';
             }
         } else {
             selectedTaskDetailsContainer.innerHTML = '<small class="text-muted">Click a task to see details.</small>';
         }
     }
 
-    // Task click handler
     document.querySelector('.schedule-grid').addEventListener('click', function (event) {
         let targetBlock = event.target.closest('.task-block');
         if (targetBlock) {
             const taskId = targetBlock.dataset.taskId;
-            
             if (selectedTaskId === taskId) {
-                // Deselect if clicking the same task
-                document.querySelectorAll('.task-block.selected').forEach(block => {
-                    block.classList.remove('selected');
-                });
+                document.querySelectorAll('.task-block.selected').forEach(b => b.classList.remove('selected'));
                 selectedTaskId = null;
             } else {
-                // Select new task
-                document.querySelectorAll('.task-block.selected').forEach(block => {
-                    block.classList.remove('selected');
-                });
+                document.querySelectorAll('.task-block.selected').forEach(b => b.classList.remove('selected'));
                 targetBlock.classList.add('selected');
                 selectedTaskId = taskId;
             }
-            
             updateActionButtons();
             updateSelectedTaskDetailsDisplay();
         }
     });
 
-    // Action buttons
-    markCompletedBtn.addEventListener('click', async () => {
+markCompletedBtn.addEventListener('click', async () => {
     if (selectedTaskId && confirm('Mark this task as completed?')) {
-        try {
-            const response = await fetch(`/mark_completed/${selectedTaskId}`, { method: 'POST' });
-            if (response.ok) {
-                // Clear ML notifications for this task
-                notificationManager.clearTaskNotifications(selectedTaskId);
-                showAlert('✅ Task marked as completed!', 'success');
-                setTimeout(() => window.location.reload(), 1000);
+        const response = await fetch(`/mark_completed/${selectedTaskId}`, { method: 'POST' });
+        if (response.ok) {
+            notificationManager.clearTaskNotifications(selectedTaskId);
+            showAlert('✅ Task marked as completed!', 'success');
+            
+            // Update the task visually without reloading
+            const taskBlock = document.querySelector(`.task-block[data-task-id="${selectedTaskId}"]`);
+            if (taskBlock) {
+                taskBlock.classList.add('completed-task');
+                taskBlock.dataset.completed = "true";
+                taskBlock.innerHTML = `${taskBlock.dataset.title} <span class="completed-check">✓</span>`;
             }
-        } catch (error) {
-            console.error('Error marking task completed:', error);
-            showAlert('❌ Network error occurred.', 'error');
+            
+            // Deselect the task and update UI
+            selectedTaskId = null;
+            updateActionButtons();
+            updateSelectedTaskDetailsDisplay();
+            
+            // Remove the page reload
+            
         }
     }
 });
-
-deleteTaskBtn.addEventListener('click', async () => {
-    if (selectedTaskId && confirm('Delete this task? This cannot be undone!')) {
-        try {
+    deleteTaskBtn.addEventListener('click', async () => {
+        if (selectedTaskId && confirm('Delete this task? This cannot be undone!')) {
             const response = await fetch(`/delete_task/${selectedTaskId}`, { method: 'POST' });
             if (response.ok) {
-                // Clear ML notifications for this task
+                // This now removes the visible alert and updates storage
                 notificationManager.clearTaskNotifications(selectedTaskId);
                 showAlert('🗑️ Task deleted!', 'success');
                 setTimeout(() => window.location.reload(), 1000);
             }
-        } catch (error) {
-            console.error('Error deleting task:', error);
-            showAlert('❌ Network error occurred.', 'error');
-        }
-    }
-});
-
-    // Task Hierarchy Modal
-    document.getElementById('taskHierarchyBtn').addEventListener('click', async () => {
-        const taskHierarchyModalBody = document.querySelector('#taskHierarchyModal .modal-body');
-        taskHierarchyModalBody.innerHTML = 'Loading tasks...';
-        try {
-            const response = await fetch('/get_task_hierarchy_modal_content');
-            if (response.ok) {
-                taskHierarchyModalBody.innerHTML = await response.text();
-            } else {
-                taskHierarchyModalBody.innerHTML = '<p class="text-danger">Failed to load tasks.</p>';
-            }
-        } catch (error) {
-            console.error('Error loading task hierarchy:', error);
-            taskHierarchyModalBody.innerHTML = '<p class="text-danger">An error occurred while loading tasks.</p>';
         }
     });
 
-    // Real-time urgency updates (visual only)
-    function updateTaskUrgency() {
-        const current = new Date();
-        tasks.forEach(task => {
-            const deadline = new Date(task.dataset.deadline);
-            const remaining = deadline - current;
-            
-            task.classList.remove('urgent-task', 'overdue-task');
+    document.getElementById('taskHierarchyBtn').addEventListener('click', async () => {
+        const modalBody = document.querySelector('#taskHierarchyModal .modal-body');
+        modalBody.innerHTML = 'Loading tasks...';
+        const response = await fetch('/get_task_hierarchy_modal_content');
+        if (response.ok) {
+            modalBody.innerHTML = await response.text();
+        }
+    });
 
-            if (remaining < 0) {
-                task.classList.add('overdue-task');
-            } else if (remaining < 30 * 60 * 1000) { // 30 minutes
-                task.classList.add('urgent-task');
-            }
-        });
-    }
-
-    // Initialize
+    // Initialize page state
     updateActionButtons();
     updateSelectedTaskDetailsDisplay();
-    updateTaskUrgency();
-    
-    // Update urgency every minute (visual only - no notifications)
-    setInterval(updateTaskUrgency, 60000);
-    
-    // Show initial help message
-    setTimeout(() => {
-        showAlert('👆 Click on any task to see details and actions', 'info', 5000);
-    }, 1000);
 });
-</script>
+    </script>
 </body>
 
 </html>

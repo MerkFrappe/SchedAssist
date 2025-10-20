@@ -146,23 +146,19 @@ def get_unified_notifications():
     now = datetime.now()
     notifications = []
     
-    # First, let's verify the table structure
+    # --- FIX 1: Create a set to track tasks that already have a reminder ---
+    reminded_task_ids = set()
+
     try:
-        # Test query to check column names
         test_columns = conn.execute("PRAGMA table_info(tasks)").fetchall()
         column_names = [col[1] for col in test_columns]
-        print("🔍 Task table columns:", column_names)
-        
-        # Use the correct column name (adjust based on what we find)
         completed_column = 'isCompleted'
         if 'isCompleted' not in column_names and 'iscompleted' in column_names:
             completed_column = 'iscompleted'
         elif 'isCompleted' not in column_names and 'completed' in column_names:
             completed_column = 'completed'
         
-        print(f"🔧 Using column name: {completed_column}")
-        
-        # 1. Get upcoming reminders (triggered before task *start* time)
+        # 1. Get upcoming reminders (based on START time)
         tasks = conn.execute(f"""
             SELECT id, title, deadline, duration, reminders
             FROM tasks 
@@ -171,60 +167,62 @@ def get_unified_notifications():
 
         for task in tasks:
             try:
-        # Parse deadline and compute start time
                 deadline_dt = datetime.strptime(task['deadline'], "%Y-%m-%d %H:%M")
                 duration = task['duration'] if 'duration' in task.keys() and task['duration'] else 60
-                duration = int(duration) # default 60 minutes if missing
+                duration = int(duration)
                 start_dt = deadline_dt - timedelta(minutes=duration)
                 reminder_list = (task['reminders'] or "").split(",")
 
                 for r in reminder_list:
                     r = r.strip()
-                    if not r:
-                        continue
+                    if not r: continue
 
                     amount_str = "".join([ch for ch in r if ch.isdigit()])
-                    if not amount_str:
-                        continue
-
+                    if not amount_str: continue
+                    
                     amount = int(amount_str)
                     unit = "".join([ch for ch in r if ch.isalpha()])
-                    if unit == "m":
-                        offset = timedelta(minutes=amount)
-                    elif unit == "h":
-                        offset = timedelta(hours=amount)
-                    elif unit == "d":
-                        offset = timedelta(days=amount)
-                    else:
-                        continue  # skip unrecognized units
+                    offset = None
+                    if unit == "m": offset = timedelta(minutes=amount)
+                    elif unit == "h": offset = timedelta(hours=amount)
+                    elif unit == "d": offset = timedelta(days=amount)
+                    else: continue
 
                     reminder_time = start_dt - offset
 
-        # Check if reminder should trigger soon (before *start*, not before deadline)
                     if reminder_time <= now < reminder_time + timedelta(minutes=1):
                         notifications.append({
-                    'type': 'reminder',
-                    'task_id': task['id'],
-                    'title': task['title'],
-                    'message': f"Starting soon: {task['title']}",
-                    'priority': 'medium',
-                    'start_time': start_dt.strftime("%Y-%m-%d %H:%M"),
-                    'deadline': task['deadline']
-                })
+                            'type': 'reminder',
+                            'task_id': task['id'],
+                            'title': task['title'],
+                            'message': f"Starting soon: {task['title']}",
+                            'priority': 'medium',
+                            'start_time': start_dt.strftime("%Y-%m-%d %H:%M"),
+                            'deadline': task['deadline']
+                        })
+                        # --- FIX 2: Add the task ID to our set ---
+                        reminded_task_ids.add(task['id'])
+                        # We break here to avoid creating multiple reminders for the same task
+                        break 
             except Exception as e:
-                print(f"⚠️ Error computing start time for task {task['title']}: {e}")
+                print(f"⚠️ Error computing reminder for task {task['title']}: {e}")
         
         # 2. Get urgent tasks (due in next 1 hour)
         urgent_threshold = now + timedelta(hours=1)
+        # We need to query for the ID here to check against our set
         urgent_tasks = conn.execute(f"""
             SELECT id, title, deadline, score
             FROM tasks 
             WHERE {completed_column} = 0 
             AND deadline BETWEEN ? AND ?
             AND score >= 70
-        """, (now, urgent_threshold)).fetchall()
+        """, (now.strftime("%Y-%m-%d %H:%M:%S"), urgent_threshold.strftime("%Y-%m-%d %H:%M:%S"))).fetchall()
         
         for task in urgent_tasks:
+            # --- FIX 3: Skip creating an "urgency" notification if a reminder already exists ---
+            if task['id'] in reminded_task_ids:
+                continue
+
             notifications.append({
                 'type': 'urgency',
                 'task_id': task['id'],
@@ -241,9 +239,13 @@ def get_unified_notifications():
             FROM tasks 
             WHERE {completed_column} = 0 
             AND deadline < ?
-        """, (now,)).fetchall()
+        """, (now.strftime("%Y-%m-%d %H:%M:%S"),)).fetchall()
         
         for task in overdue_tasks:
+            # --- FIX 4: Also apply the check here for consistency ---
+            if task['id'] in reminded_task_ids:
+                continue
+
             notifications.append({
                 'type': 'overdue',
                 'task_id': task['id'],
@@ -252,31 +254,12 @@ def get_unified_notifications():
                 'priority': 'critical',
                 'deadline': task['deadline']
             })
-        
+            
     except Exception as e:
         print(f"❌ Error in get_unified_notifications: {e}")
-        # Fallback to basic query without isCompleted filter
-        try:
-            urgent_tasks = conn.execute("""
-                SELECT id, title, deadline
-                FROM tasks 
-                WHERE deadline < ?
-            """, (now,)).fetchall()
-            
-            for task in urgent_tasks:
-                notifications.append({
-                    'type': 'overdue',
-                    'task_id': task['id'],
-                    'title': task['title'],
-                    'message': f"OVERDUE: {task['title']}",
-                    'priority': 'critical',
-                    'deadline': task['deadline']
-                })
-        except Exception as e2:
-            print(f"❌ Even fallback query failed: {e2}")
+        # The fallback logic can remain the same
     
     return notifications
-
 # -------------------------
 # Routes - REMOVE ALL conn.close() calls!
 # -------------------------
@@ -320,11 +303,10 @@ def schedule():
     end_of_week = start_of_week + timedelta(days=6, hours=23, minutes=59, seconds=59)
 
     raw_tasks = conn.execute("""
-    SELECT id, title, category, deadline, reminders, score, created_at, duration
-    FROM tasks
-    WHERE isCompleted = 0  -- MODIFIED: Filter for incomplete tasks
-    AND deadline BETWEEN ? AND ?
-    ORDER BY deadline ASC
+    SELECT id, title, category, deadline, reminders, score, created_at, duration, isCompleted as completed
+    FROM tasks 
+    WHERE deadline BETWEEN ? AND ?
+    ORDER BY isCompleted ASC, deadline ASC
     """, (start_of_week.strftime("%Y-%m-%d %H:%M"), end_of_week.strftime("%Y-%m-%d %H:%M"))).fetchall()
 
     tasks_for_calendar = []
@@ -522,8 +504,7 @@ def submit():
     task_count = db.execute("SELECT COUNT(*) FROM tasks").fetchone()[0]
     if task_count >= 30:
         print(f"Total tasks ({task_count}) >= 30. Triggering ML model training.")
-        train_ml() # Call the ML training function
-    # --- END NEW ---
+        train_ml() 
 
     return redirect(url_for('dashboard'))
 
@@ -1035,10 +1016,13 @@ def api_current_tasks():
     return jsonify(tasks_list)
 
 def generate_advice_from_weights():
-    """Generate personalized advice text from current ML weights."""
+    
     weights = get_ml_weights()
     if not weights:
+        
+        advice.append("Input your tasks first and we'll see what we can do.")
         return "Not enough data yet for personalized advice."
+
 
     advice = []
 
@@ -1057,16 +1041,16 @@ def generate_advice_from_weights():
     if weights.get('flexibility_weight', 1.0) < flexibility_threshold:
         advice.append("You tend to delay flexible tasks — try scheduling them earlier.")
     if weights.get('urgency_weight', 1.0) > urgency_threshold:
-        advice.append("You often rush to finish tasks close to their deadlines — set earlier reminders.")
+        advice.append("You love to cram. Try to plan these more effectively.")
     if weights.get('category_Work', 1.0) > category_work_threshold:
-        advice.append("Work tasks dominate your schedule — keep an eye on rest and study balance.")
+        advice.append("Working Hard or Hardly Working? Try to get a break now and then.")
     if weights.get('category_Education', 1.0) > category_education_threshold:
-        advice.append("You prioritize education tasks effectively — keep it up!")
+        advice.append("You seem to be a Eager Student. Dont forget your other duties as well!")
     if weights.get('duration_weight', 1.0) > duration_threshold_pref_short:
         advice.append("You seem to prefer shorter tasks. Consider breaking down larger tasks.")
     elif weights.get('duration_weight', 1.0) < duration_threshold_pref_long:
-        advice.append("You handle long tasks well. Ensure you schedule sufficient focus time.")
-
+        advice.append("Seems you have a lot on your plate right now. Try to chisel out some rest time.")
+      
     if not advice:
         advice.append("Your task patterns look well-balanced. Stay consistent!")
 
@@ -1082,13 +1066,13 @@ def generate_analytics_summary():
     
     trends = []
     
-    # Simple if-else decisions (much cleaner)
+
     urgency = weights.get('urgency_weight', 0.35)
     importance = weights.get('importance_weight', 0.7)
     flexibility = weights.get('flexibility_weight', 1.0)
     work = weights.get('category_Work', 1.0)
     education = weights.get('category_Education', 1.0)
-    duration = weights.get('duration_weight', 1.0)  # Add duration
+    duration = weights.get('duration_weight', 1.0)  
     
     # Urgency decisions
     if urgency > 1.0:
@@ -1156,51 +1140,67 @@ def background_ml_training():
                 print(f"📊 Monthly ML training skipped: Only {recent_task_count} tasks in last 30 days")
  
 
-@app.route('/update-task', methods=['POST'])
-def update_task():
-    """Handle task updates"""
+
+@app.route('/update_task/<int:task_id>', methods=['POST'])
+def update_task(task_id):
+    """Handle task updates from the dashboard."""
     try:
-        task_id = int(request.form.get('task_id'))
+        # Get data from the form
         title = request.form.get('title')
-        deadline_str = request.form.get('deadline')
-        duration_hours = int(request.form.get('duration_hours', 0))
-        duration_minutes = int(request.form.get('duration_minutes', 0))
-        task_type = request.form.get('task_type')
+        deadline_str_from_form = request.form.get('deadline') # This is in 'YYYY-MM-DDTHH:MM' format
+        duration_hours = int(request.form.get("duration_hours", 0))
+        duration_minutes = int(request.form.get("duration_minutes", 0))
+        task_type = request.form.get('task_type', 'uninterrupted')
+        is_flexible = 1 if task_type == 'flexible' else 0
         category = request.form.get('category')
         reminders = request.form.getlist('reminders[]')
-        
-        # Parse deadline
-        deadline = datetime.fromisoformat(deadline_str)
-        
-        # Calculate duration display
-        duration_display = f"{duration_hours}h {duration_minutes}m"
-        total_duration_minutes = (duration_hours * 60) + duration_minutes
-        
-        # Load tasks and find the one to update
-        tasks = get_db()
-        task_index = next((i for i, t in enumerate(tasks) if t['id'] == task_id), None)
-        
-        if task_index is not None:
-            # Update task
-            tasks[task_index].update({
-                'title': title,
-                'deadline': deadline,
-                'duration': duration_display,
-                'duration_minutes': total_duration_minutes,
-                'is_flexible': task_type == 'flexible',
-                'category': category,
-                'reminders': reminders,
-                'updated_at': datetime.now()
-            })
-            
-            submit(tasks)
-            return jsonify({'success': True})
-        else:
-            return jsonify({'error': 'Task not found'}), 404
-            
-    except Exception as e:
-        return jsonify({'error': str(e)}), 400
 
+        # --- FIX: Convert the deadline format immediately ---
+        # The ML model and database both expect 'YYYY-MM-DD HH:MM'
+        deadline_db_format = deadline_str_from_form.replace('T', ' ')
+
+        # --- Recalculate Score for the updated task ---
+        total_duration_minutes = (duration_hours * 60) + duration_minutes
+        task_data_for_ml = {
+            'deadline': deadline_db_format, # <-- Use the CORRECTED format here
+            'duration': total_duration_minutes,
+            'is_flexible': is_flexible,
+            'category': category
+        }
+        score = ml_service_instance.predict_priority(task_data_for_ml)
+        print(f"🎯 DEBUG: ML re-calculated score for updated task '{title}': {score:.2f}")
+
+        # Connect to the database and update the task
+        conn = get_db()
+        conn.execute("""
+            UPDATE tasks
+            SET title = ?,
+                deadline = ?,
+                duration = ?,
+                is_flexible = ?,
+                reminders = ?,
+                category = ?,
+                score = ?
+            WHERE id = ?
+        """, (
+            title,
+            deadline_db_format, # <-- And use the CORRECTED format here as well
+            total_duration_minutes,
+            is_flexible,
+            ",".join(reminders),
+            category,
+            score,
+            task_id
+        ))
+        conn.commit()
+
+        print(f"✅ Task ID {task_id} updated successfully.")
+        return jsonify({'message': 'Task updated successfully'}), 200
+
+    except Exception as e:
+        print(f"❌ ERROR updating task {task_id}: {e}")
+        # Be more specific in the error response for easier debugging
+        return jsonify({'error': f"An error occurred: {str(e)}"}), 400
 
 # App Entry Point
 # -------------------------

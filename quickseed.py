@@ -61,43 +61,44 @@ def seed_tasks():
     c = conn.cursor()
     
     tasks =  [
-    # ========== WORK TASKS (Balanced completion) ==========
-    ("Morning work planning", "2025-10-17 09:00", 60, 0, "30m", "Work", 75, 1),
-    ("Client meeting preparation", "2025-10-17 14:00", 90, 0, "1h", "Work", 82, 1),
-    ("Team collaboration session", "2025-10-18 10:00", 120, 0, "1d", "Work", 78, 1),
-    ("Project deadline", "2025-10-19 17:00", 180, 0, "1d,2h", "Work", 88, 1),
-    ("Weekly report submission", "2025-10-20 16:00", 45, 1, "3h", "Work", 70, 0),  # Will do tomorrow
-    ("Skill development workshop", "2025-10-21 13:00", 120, 0, "1d", "Work", 80, 1),
-    ("Work emails organization", "2025-10-22 08:00", 60, 1, "none", "Work", 65, 1),
-    ("Networking event", "2025-10-23 18:00", 90, 0, "1d", "Work", 72, 1),
+    # ========== EDUCATION TASKS (Almost Perfect Completion) ==========
+    ("Study for Calculus final", "2025-10-17 19:00", 180, 0, "1d,2h", "Education", 95, 1),
+    ("Write 10-page research paper", "2025-10-18 20:00", 240, 0, "2d", "Education", 92, 1),
+    ("Complete Physics lab report", "2025-10-19 16:00", 120, 0, "3h", "Education", 88, 1),
+    ("Prepare Chemistry presentation", "2025-10-20 18:00", 150, 0, "1d", "Education", 90, 1),
+    ("Read 5 chapters for Literature", "2025-10-21 21:00", 180, 1, "1h", "Education", 85, 1),
+    ("Solve advanced Math problems", "2025-10-22 15:00", 120, 0, "2h", "Education", 89, 1),
+    ("Research thesis topic", "2025-10-23 19:00", 180, 1, "1d", "Education", 93, 1),
+    ("Study group - exam prep", "2025-10-24 17:00", 120, 0, "30m", "Education", 87, 1),
+    ("Review Biology concepts", "2025-10-25 22:00", 90, 1, "none", "Education", 84, 1),
+    ("Online course final project", "2025-10-26 20:00", 240, 0, "1d", "Education", 94, 1),
+    ("Practice programming exercises", "2025-10-27 19:00", 120, 1, "none", "Education", 86, 1),
+    ("Prepare for class debate", "2025-10-28 18:00", 90, 0, "1h", "Education", 82, 1),
+    ("Study flashcards", "2025-10-29 21:00", 60, 1, "none", "Education", 78, 1),
+    ("Complete homework assignments", "2025-10-30 20:00", 180, 0, "2h", "Education", 91, 1),
+    ("Review lecture recordings", "2025-10-31 19:00", 120, 1, "none", "Education", 83, 1),
     
-    # ========== EDUCATION TASKS (Consistent learning) ==========
-    ("Online course module", "2025-10-17 20:00", 60, 1, "1h", "Education", 68, 1),
-    ("Read industry book", "2025-10-18 21:00", 45, 1, "none", "Education", 62, 1),
-    ("Research new technology", "2025-10-19 19:00", 90, 1, "1d", "Education", 75, 1),
-    ("Practice new skill", "2025-10-20 20:30", 60, 1, "30m", "Education", 70, 0),  # Skipped for rest
-    ("Watch educational video", "2025-10-21 21:00", 30, 1, "none", "Education", 58, 1),
-    ("Study group participation", "2025-10-22 19:00", 120, 0, "1d", "Education", 78, 1),
-    ("Learning journal update", "2025-10-23 20:00", 30, 1, "none", "Education", 65, 1),
+    # ========== PERSONAL TASKS (Mostly Neglected) ==========
+    ("Grocery shopping", "2025-10-17 17:00", 60, 1, "2h", "Personal", 35, 0),  # Ordered delivery
+    ("Laundry", "2025-10-18 19:00", 90, 1, "none", "Personal", 28, 0),  # Piled up for weeks
+    ("Call family", "2025-10-19 21:00", 30, 1, "1h", "Personal", 45, 0),  # Too busy studying
+    ("Clean dorm room", "2025-10-20 16:00", 45, 1, "none", "Personal", 32, 0),  # Room is messy
+    ("Cook proper meal", "2025-10-21 18:30", 60, 1, "1h", "Personal", 38, 0),  # Ate instant noodles
+    ("Gym workout", "2025-10-22 07:00", 60, 1, "none", "Personal", 42, 0),  # Studied instead
+    ("Social event", "2025-10-23 20:00", 120, 0, "1d", "Personal", 55, 0),  # Cancelled to study
+    ("Budget planning", "2025-10-24 19:00", 30, 1, "none", "Personal", 48, 0),  # Forgot completely
+    ("Movie with friends", "2025-10-25 20:00", 180, 0, "2h", "Personal", 52, 0),  # Said no
+    ("Self-care day", "2025-10-26 14:00", 120, 1, "none", "Personal", 40, 0),  # No time
     
-    # ========== PERSONAL TASKS (Good self-care) ==========
-    ("Morning workout", "2025-10-17 07:00", 60, 1, "none", "Personal", 55, 1),
-    ("Grocery shopping", "2025-10-18 17:00", 45, 1, "2h", "Personal", 48, 1),
-    ("Cook healthy dinner", "2025-10-19 18:30", 60, 1, "1h", "Personal", 52, 1),
-    ("Call family", "2025-10-20 20:00", 30, 1, "1h", "Personal", 58, 1),
-    ("Meditation session", "2025-10-21 07:30", 20, 1, "none", "Personal", 45, 0),  # Overslept
-    ("Home cleaning", "2025-10-22 16:00", 90, 1, "none", "Personal", 50, 1),
-    ("Social gathering", "2025-10-23 19:00", 120, 0, "1d", "Personal", 62, 1),
-    ("Personal finance review", "2025-10-24 18:00", 60, 1, "1d", "Personal", 68, 1),
-    ("Hobby time (guitar)", "2025-10-25 20:00", 45, 1, "none", "Personal", 42, 1),
-    ("Weekend hiking trip", "2025-10-26 09:00", 240, 0, "1d", "Personal", 72, 1),
-    ("Read fiction book", "2025-10-27 21:00", 60, 1, "none", "Personal", 48, 1),
-    ("Self-reflection journal", "2025-10-28 22:00", 30, 1, "none", "Personal", 55, 0),  # Too tired
-    
-    # ========== EXTRA TASKS ==========
-    ("Work project brainstorming", "2025-10-29 10:00", 90, 0, "30m", "Work", 79, 1),
-    ("Learn new software tool", "2025-10-29 20:00", 60, 1, "none", "Education", 74, 1),
-    ("Plan next vacation", "2025-10-30 19:00", 45, 1, "none", "Personal", 60, 1)
+    # ========== WORK TASKS (Bare Minimum) ==========
+    ("Library shift", "2025-10-17 13:00", 240, 0, "30m", "Work", 75, 1),  # Only for money
+    ("Tutoring session", "2025-10-18 15:00", 90, 0, "1h", "Work", 82, 0),  # Cancelled for study
+    ("Campus job", "2025-10-19 10:00", 180, 0, "1d", "Work", 78, 1),  # Bare minimum
+    ("Research assistant", "2025-10-20 14:00", 120, 0, "2h", "Work", 85, 0),  # Skipped
+    ("Coffee shop shift", "2025-10-21 16:00", 240, 0, "1h", "Work", 72, 1),  # Need the money
+    ("Freelance project", "2025-10-22 19:00", 90, 1, "1d", "Work", 79, 0),  # Delayed
+    ("TA office hours", "2025-10-23 13:00", 120, 0, "30m", "Work", 76, 1),  # Required
+    ("Internship work", "2025-10-24 09:00", 180, 0, "1d", "Work", 83, 0)   # Prioritized studying
 ]
     
     # Clear existing tasks
