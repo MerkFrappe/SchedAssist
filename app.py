@@ -6,6 +6,7 @@ import sqlite3
 import os
 import threading
 import time
+import re
 
 
 app = Flask(__name__)
@@ -132,7 +133,7 @@ def verify_and_fix_schema():
             conn.commit()
             print("✅ Added isCompleted column")
             
-            # Update any existing tasks to have default value
+      
             conn.execute("UPDATE tasks SET isCompleted = 0 WHERE isCompleted IS NULL")
             conn.commit()
             
@@ -141,111 +142,76 @@ def verify_and_fix_schema():
 
 
 def get_unified_notifications():
-    """Get all notifications: reminders + urgency changes"""
     conn = get_db()
     now = datetime.now()
     notifications = []
     
-    # --- FIX 1: Create a set to track tasks that already have a reminder ---
-    reminded_task_ids = set()
-
+    print(f"🕐 SYSTEM TIME: {now}")
+    
     try:
-        test_columns = conn.execute("PRAGMA table_info(tasks)").fetchall()
-        column_names = [col[1] for col in test_columns]
-        completed_column = 'isCompleted'
-        if 'isCompleted' not in column_names and 'iscompleted' in column_names:
-            completed_column = 'iscompleted'
-        elif 'isCompleted' not in column_names and 'completed' in column_names:
-            completed_column = 'completed'
-        
-        # 1. Get upcoming reminders (based on START time)
-        tasks = conn.execute(f"""
-            SELECT id, title, deadline, duration, reminders
+        # Get incomplete tasks
+        tasks = conn.execute("""
+            SELECT id, title, deadline, duration, reminders, score
             FROM tasks 
-            WHERE {completed_column} = 0
+            WHERE isCompleted = 0
         """).fetchall()
+
+        print(f"🔍 Checking {len(tasks)} tasks for reminders")
 
         for task in tasks:
             try:
-                deadline_dt = datetime.strptime(task['deadline'], "%Y-%m-%d %H:%M")
-                duration = task['duration'] if 'duration' in task.keys() and task['duration'] else 60
-                duration = int(duration)
+                task_id = task['id']
+                title = task['title']
+                deadline_str = task['deadline']
+                duration = task['duration'] or 60
+                reminders_str = task['reminders'] or ""
+                
+                print(f"  📝 Task: {title}")
+                print(f"    Deadline: {deadline_str}, Duration: {duration}")
+                
+                deadline_dt = datetime.strptime(deadline_str, "%Y-%m-%dT%H:%M" if 'T' in deadline_str else "%Y-%m-%d %H:%M")
+                
+             
                 start_dt = deadline_dt - timedelta(minutes=duration)
-                reminder_list = (task['reminders'] or "").split(",")
-
-                for r in reminder_list:
-                    r = r.strip()
-                    if not r: continue
-
-                    amount_str = "".join([ch for ch in r if ch.isdigit()])
-                    if not amount_str: continue
+                print(f"    Start time: {start_dt}")
+                
+            
+                reminder_list = [r.strip() for r in reminders_str.split(",") if r.strip() and r.strip() != "none"]
+                print(f"    Reminders: {reminder_list}")
+                
+                for reminder in reminder_list:
                     
-                    amount = int(amount_str)
-                    unit = "".join([ch for ch in r if ch.isalpha()])
-                    offset = None
-                    if unit == "m": offset = timedelta(minutes=amount)
-                    elif unit == "h": offset = timedelta(hours=amount)
-                    elif unit == "d": offset = timedelta(days=amount)
-                    else: continue
-
-                    reminder_time = start_dt - offset
-
-                    if reminder_time <= now < reminder_time + timedelta(minutes=1):
-                        notifications.append({
-                            'type': 'reminder',
-                            'task_id': task['id'],
-                            'title': task['title'],
-                            'message': f"Starting soon: {task['title']}",
-                            'priority': 'medium',
-                            'start_time': start_dt.strftime("%Y-%m-%d %H:%M"),
-                            'deadline': task['deadline']
-                        })
-                        # --- FIX 2: Add the task ID to our set ---
-                        reminded_task_ids.add(task['id'])
-                        # We break here to avoid creating multiple reminders for the same task
-                        break 
+                    if 'm' in reminder:
+                        minutes = int(''.join(filter(str.isdigit, reminder)))
+                        reminder_time = start_dt - timedelta(minutes=minutes)
+                        print(f"    {reminder} reminder at: {reminder_time}")
+                        
+                        time_diff = (now - reminder_time).total_seconds()
+                        print(f"    Time difference: {time_diff} seconds")
+                        
+                        if 0 <= time_diff <= 120:  
+                            notifications.append({
+                                'type': 'reminder',
+                                'task_id': task_id,
+                                'title': title,
+                                'message': f"⏰ Reminder: {title} starts in {reminder}",
+                                'priority': 'medium'
+                            })
+                            print(f"    ✅ REMINDER TRIGGERED!")
+                            
             except Exception as e:
-                print(f"⚠️ Error computing reminder for task {task['title']}: {e}")
-        
-        # 2. Get urgent tasks (due in next 1 hour)
-        urgent_threshold = now + timedelta(hours=1)
-        # We need to query for the ID here to check against our set
-        urgent_tasks = conn.execute(f"""
-            SELECT id, title, deadline, score
-            FROM tasks 
-            WHERE {completed_column} = 0 
-            AND deadline BETWEEN ? AND ?
-            AND score >= 70
-        """, (now.strftime("%Y-%m-%d %H:%M:%S"), urgent_threshold.strftime("%Y-%m-%d %H:%M:%S"))).fetchall()
-        
-        for task in urgent_tasks:
-            # --- FIX 3: Skip creating an "urgency" notification if a reminder already exists ---
-            if task['id'] in reminded_task_ids:
+                print(f"    ❌ Error: {e}")
                 continue
 
-            notifications.append({
-                'type': 'urgency',
-                'task_id': task['id'],
-                'title': task['title'],
-                'message': f"URGENT: {task['title']}",
-                'priority': 'high',
-                'deadline': task['deadline'],
-                'score': task['score']
-            })
-        
-        # 3. Get overdue tasks
-        overdue_tasks = conn.execute(f"""
+   
+        overdue_tasks = conn.execute("""
             SELECT id, title, deadline
             FROM tasks 
-            WHERE {completed_column} = 0 
+            WHERE isCompleted = 0 
             AND deadline < ?
         """, (now.strftime("%Y-%m-%d %H:%M:%S"),)).fetchall()
-        
-        for task in overdue_tasks:
-            # --- FIX 4: Also apply the check here for consistency ---
-            if task['id'] in reminded_task_ids:
-                continue
 
+        for task in overdue_tasks:
             notifications.append({
                 'type': 'overdue',
                 'task_id': task['id'],
@@ -254,14 +220,15 @@ def get_unified_notifications():
                 'priority': 'critical',
                 'deadline': task['deadline']
             })
-            
+
     except Exception as e:
-        print(f"❌ Error in get_unified_notifications: {e}")
-        # The fallback logic can remain the same
-    
+        print(f"❌ MAJOR ERROR: {e}")
+
+    print(f"📢 FINAL: {len(notifications)} notifications")
     return notifications
+
 # -------------------------
-# Routes - REMOVE ALL conn.close() calls!
+# Routes 
 # -------------------------
 @app.route("/")
 def home():
@@ -271,10 +238,9 @@ def home():
 def dashboard():
     conn = get_db()
     
-    # Debug: print what we're getting from database
+    
     print("🔄 Fetching tasks for dashboard...")
     
-    # MODIFIED: Filter for incomplete tasks
     tasks = conn.execute("""
         SELECT * FROM tasks
         WHERE isCompleted = 0
@@ -285,7 +251,7 @@ def dashboard():
     
     tasks = [dict(row) for row in tasks]
     
-    # Debug print first few tasks
+
     for i, task in enumerate(tasks[:3]):
         print(f"  Task {i+1}: '{task.get('title', 'No title')}' - Score: {task.get('score', 'No score')}")
     
@@ -295,11 +261,11 @@ def dashboard():
 @app.route("/Main")
 def schedule():
     conn = get_db()
-    # Get the current date
+
     now = datetime.now()
-    # Find the start of the current week (Monday)
+
     start_of_week = now - timedelta(days=now.weekday())
-    # Find the end of the current week (Sunday)
+    
     end_of_week = start_of_week + timedelta(days=6, hours=23, minutes=59, seconds=59)
 
     raw_tasks = conn.execute("""
@@ -363,7 +329,6 @@ def schedule():
 def analytics():
     conn = get_db()
 
-    # Get archived tasks
     archived_tasks = conn.execute("""
         SELECT * FROM tasks
         WHERE isCompleted = 1
@@ -371,10 +336,10 @@ def analytics():
         ORDER BY created_at ASC
     """).fetchall()
 
-    # Convert Row objects → dicts
+
     archived_tasks = [dict(row) for row in archived_tasks]
 
-    # Get all tasks grouped by category
+
     category_counts = conn.execute("""
         SELECT category, COUNT(*) AS count
         FROM tasks
@@ -468,17 +433,17 @@ def submit():
     print(f"🔍 DEBUG: Task data for ML prediction: {task_data_for_ml}")
 
     try:
-        # Predict the priority score using the ML service
+        
         score = ml_service_instance.predict_priority(task_data_for_ml)
         print(f"🎯 DEBUG: ML predicted score for '{title}': {score:.2f}")
     except ValueError as e:
         print(f"⚠️ ERROR: ML model not trained, falling back to default score. {e}")
-        # Fallback to a default scoring if ML model isn't ready
+      
         now = datetime.now()
         remaining_time = (deadline - now).total_seconds() / 60
         urgency_score = 100 if remaining_time <= 0 else min((1 / remaining_time) * 100 + duration_minutes * 0.5, 100)
         
-        # Default weights for fallback
+
         default_weights = get_ml_weights() 
         category_key = f"category_{category.capitalize()}"
         category_weight = default_weights.get(category_key, default_weights['category_other'])
@@ -488,7 +453,6 @@ def submit():
         flexibility_weight_val = default_weights['flexibility_weight'] if is_flexible else 1.2
         score = (urgency_score * default_weights['urgency_weight']) + (importance * default_weights['importance_weight']) * flexibility_weight_val
 
-    # Insert into database
     print(f"🔧 DEBUG: Task '{title}' - is_flexible: {is_flexible}, task_type: '{task_type}'")
     
     db = get_db()
@@ -500,7 +464,7 @@ def submit():
 
     print(f"Task '{title}' saved with score {score:.2f}, flexible: {is_flexible}")
 
-    # --- NEW: Check task count and trigger ML training ---
+
     task_count = db.execute("SELECT COUNT(*) FROM tasks").fetchone()[0]
     if task_count >= 30:
         print(f"Total tasks ({task_count}) >= 30. Triggering ML model training.")
@@ -511,18 +475,23 @@ def submit():
 @app.route("/optimize_tasks", methods=["POST"])
 def optimize_tasks():
     conn = get_db()
+
+    now = datetime.now()
+    start_of_week = now - timedelta(days=now.weekday())
+    end_of_week = start_of_week + timedelta(days=6, hours=23, minutes=59, seconds=59)
+    
     tasks_raw = conn.execute("""
-        SELECT id, title, category, deadline, duration, score, reminders, is_flexible
+        SELECT id, title, category, deadline, duration, score, reminders, is_flexible, isCompleted as completed
         FROM tasks
-        WHERE isCompleted = 0
-        ORDER BY score DESC
-    """).fetchall()
+        WHERE deadline BETWEEN ? AND ?
+        ORDER BY isCompleted ASC, score DESC
+    """, (start_of_week.strftime("%Y-%m-%d %H:%M"), end_of_week.strftime("%Y-%m-%d %H:%M"))).fetchall() 
 
     print("🔍 DEBUG - Tasks from database:")
     for task in tasks_raw:
         print(f"  - '{task['title']}': is_flexible={task['is_flexible']}, score={task['score']}")
 
-    # Convert to dict and parse datetime
+   
     tasks = []
     for row in tasks_raw:
         task = dict(row)
@@ -539,11 +508,10 @@ def optimize_tasks():
             task["start_hour_str"] = f"{start_dt.hour:02d}:{start_dt.minute:02d}"
             task["end_hour_str"] = f"{deadline_dt.hour:02d}:{deadline_dt.minute:02d}"
             
-            # Calculate colspan based on 30-minute slots
+          
             total_duration_minutes = task.get("duration", 60)
             task['colspan'] = max(1, ceil(total_duration_minutes / 15))
-            #flag
-            # Parse reminders
+         
             if not task.get('reminders'):
                 task['reminders'] = []
                 
@@ -551,34 +519,28 @@ def optimize_tasks():
         except Exception as e:
             print(f"⚠️ Error parsing task {task.get('title', 'N/A')}: {e}")
 
-    # ==================== RESCHEDULE FUNCTIONS ====================
 
-    # Constants for schedule mapping
-    SCHEDULE_START_HOUR = 6  # 6 AM
-    SCHEDULE_END_HOUR = 22   # 10 PM
+    SCHEDULE_START_HOUR = 6  
+    SCHEDULE_END_HOUR = 22   
     SLOT_DURATION_MINUTES = 15
-    TOTAL_DAILY_SLOTS = (SCHEDULE_END_HOUR - SCHEDULE_START_HOUR) * (60 // SLOT_DURATION_MINUTES)  # 32 slots
-
+    TOTAL_DAILY_SLOTS = (SCHEDULE_END_HOUR - SCHEDULE_START_HOUR) * (60 // SLOT_DURATION_MINUTES) 
     def get_slot_index(hour, minute):
-        """Converts hour and minute to slot index (0-31)"""
         if hour < SCHEDULE_START_HOUR or hour >= SCHEDULE_END_HOUR:
             return -1
         total_minutes = (hour - SCHEDULE_START_HOUR) * 60 + minute
         return total_minutes // SLOT_DURATION_MINUTES
 
     def get_time_from_slot_index(slot_index):
-        """Converts slot index back to hour and minute"""
         total_minutes = slot_index * SLOT_DURATION_MINUTES
         hour = SCHEDULE_START_HOUR + (total_minutes // 60)
         minute = total_minutes % 60
         return hour, minute
 
     def get_num_slots_for_duration(duration_minutes):
-        """Calculates number of slots needed for duration"""
         return max(1, ceil(duration_minutes / SLOT_DURATION_MINUTES))
 
     def initialize_schedule():
-        """Initialize empty schedule for the week"""
+       
         return {
             day: [None] * TOTAL_DAILY_SLOTS for day in [
                 "Monday", "Tuesday", "Wednesday", "Thursday", 
@@ -1007,7 +969,7 @@ def api_current_tasks():
             
         except Exception as e:
             print(f"⚠️ Error computing start time for task {task_dict.get('title', 'Unknown')}: {e}")
-            # Set default values if calculation fails
+         
             task_dict['start_hour_int'] = 9
             task_dict['end_hour_int'] = 10
             
@@ -1026,7 +988,6 @@ def generate_advice_from_weights():
 
     advice = []
 
-    # Get current thresholds or use defaults
     urgency_threshold = 1.0
     importance_threshold = 1.0
     flexibility_threshold = 0.8
@@ -1035,8 +996,7 @@ def generate_advice_from_weights():
     duration_threshold_pref_short = 1.2
     duration_threshold_pref_long = 0.8
 
-    # Using confidence if available to make advice more nuanced
-    # For now, we'll use a simplified check
+    
     
     if weights.get('flexibility_weight', 1.0) < flexibility_threshold:
         advice.append("You tend to delay flexible tasks — try scheduling them earlier.")
@@ -1058,7 +1018,7 @@ def generate_advice_from_weights():
 
 
 def generate_analytics_summary():
-    """Simple decision-based analytics summary"""
+    
     weights = get_ml_weights()
     
     if not weights:
@@ -1123,7 +1083,7 @@ def background_ml_training():
     while True:
         time.sleep(MONTHLY_INTERVAL_SECONDS)  
         with app.app_context():
-            # Scan for tasks in the last 30 days
+           
             now = datetime.now()
             start_of_period = now - timedelta(days=30)
             
@@ -1143,9 +1103,9 @@ def background_ml_training():
 
 @app.route('/update_task/<int:task_id>', methods=['POST'])
 def update_task(task_id):
-    """Handle task updates from the dashboard."""
+    
     try:
-        # Get data from the form
+  
         title = request.form.get('title')
         deadline_str_from_form = request.form.get('deadline') # This is in 'YYYY-MM-DDTHH:MM' format
         duration_hours = int(request.form.get("duration_hours", 0))
@@ -1155,14 +1115,13 @@ def update_task(task_id):
         category = request.form.get('category')
         reminders = request.form.getlist('reminders[]')
 
-        # --- FIX: Convert the deadline format immediately ---
-        # The ML model and database both expect 'YYYY-MM-DD HH:MM'
+    
         deadline_db_format = deadline_str_from_form.replace('T', ' ')
 
-        # --- Recalculate Score for the updated task ---
+      
         total_duration_minutes = (duration_hours * 60) + duration_minutes
         task_data_for_ml = {
-            'deadline': deadline_db_format, # <-- Use the CORRECTED format here
+            'deadline': deadline_db_format, 
             'duration': total_duration_minutes,
             'is_flexible': is_flexible,
             'category': category
@@ -1170,7 +1129,7 @@ def update_task(task_id):
         score = ml_service_instance.predict_priority(task_data_for_ml)
         print(f"🎯 DEBUG: ML re-calculated score for updated task '{title}': {score:.2f}")
 
-        # Connect to the database and update the task
+        
         conn = get_db()
         conn.execute("""
             UPDATE tasks
@@ -1184,7 +1143,7 @@ def update_task(task_id):
             WHERE id = ?
         """, (
             title,
-            deadline_db_format, # <-- And use the CORRECTED format here as well
+            deadline_db_format, 
             total_duration_minutes,
             is_flexible,
             ",".join(reminders),

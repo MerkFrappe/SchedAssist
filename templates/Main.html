@@ -154,11 +154,14 @@
     color: #6c757d !important;
     border: 1px dashed #6c757d !important;
     text-decoration: line-through;
+    cursor: not-allowed !important;
+    pointer-events: none !important;
 }
 
 .task-block.completed-task:hover {
     opacity: 0.8;
     filter: grayscale(0.5);
+    transform: none !important;
 }
 
 .completed-check {
@@ -769,8 +772,8 @@ class MLNotificationManager {
             alertBox.remove();
         });
 
-        // *** CHANGE 1: REMOVED THE AUTOMATIC TIMEOUT ***
-        // The alert will now stay until the user clicks the close button.
+        setInterval(() => this.checkMLNotifications(), 120000);
+        this.checkMLNotifications();
     }
 
     updateTaskVisual(notification) {
@@ -896,20 +899,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.querySelector('.schedule-grid').addEventListener('click', function (event) {
         let targetBlock = event.target.closest('.task-block');
-        if (targetBlock) {
-            const taskId = targetBlock.dataset.taskId;
-            if (selectedTaskId === taskId) {
-                document.querySelectorAll('.task-block.selected').forEach(b => b.classList.remove('selected'));
-                selectedTaskId = null;
-            } else {
-                document.querySelectorAll('.task-block.selected').forEach(b => b.classList.remove('selected'));
-                targetBlock.classList.add('selected');
-                selectedTaskId = taskId;
-            }
-            updateActionButtons();
-            updateSelectedTaskDetailsDisplay();
+          if (targetBlock) {
+        // Check if task is completed
+        if (targetBlock.dataset.completed === "true") {
+            console.log("ℹ️ Completed task clicked - selection disabled");
+            return; // Exit early, don't select completed tasks
         }
-    });
+        
+        const taskId = targetBlock.dataset.taskId;
+        if (selectedTaskId === taskId) {
+            document.querySelectorAll('.task-block.selected').forEach(b => b.classList.remove('selected'));
+            selectedTaskId = null;
+        } else {
+            document.querySelectorAll('.task-block.selected').forEach(b => b.classList.remove('selected'));
+            targetBlock.classList.add('selected');
+            selectedTaskId = taskId;
+        }
+        updateActionButtons();
+        updateSelectedTaskDetailsDisplay();
+    }
+});
 
 markCompletedBtn.addEventListener('click', async () => {
     if (selectedTaskId && confirm('Mark this task as completed?')) {
