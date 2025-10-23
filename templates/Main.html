@@ -188,10 +188,9 @@
 }
 
         .time-column-standalone .time-label {
-            height: 31px;
-            /* Changed to match 30-minute slot height */
+            height: 33.5px;
             padding: 5px;
-            text-align: center;
+            text-align: right;
             background: #f8f9fa;
             border-bottom: 1px solid #dee2e6;
             font-size: 0.8em;
@@ -203,7 +202,7 @@
         .schedule-grid {
             display: grid;
             grid-template-columns: repeat(7, 1fr);
-            grid-template-rows: 50px repeat(64, 15px);
+            grid-template-rows: 50px repeat(64, 16px);
             /* 1 header row + 32 slots * 30px height */
             gap: 1px;
             background-color: #ddd;
@@ -233,7 +232,7 @@
             justify-content: center;
             /* Ensure day labels have a fixed width or can shrink */
             width: 100%;
-            /* Occupy full column width */
+           
         }
 
         .grid-cell {
@@ -242,21 +241,18 @@
             position: relative;
             z-index: 1;
             height: 15px;
-            /* Match slot height */
+          
         }
 
-        /* Task Blocks */
+      
         .task-block {
             cursor: pointer;
             border: 1px solid transparent;
             transition: all 0.2s ease-in-out;
             color: white;
             padding: 4px 3px;
-            /* Adjusted padding for smaller slots */
             border-radius: 4px;
-            /* Adjusted border-radius */
             font-size: 0.7rem;
-            /* Adjusted font size */
             font-weight: 600;
             display: flex;
             flex-direction: column;
@@ -680,7 +676,11 @@ class MLNotificationManager {
         const stored = JSON.parse(localStorage.getItem('shownNotifications') || '[]');
         this.shownNotifications = new Set(stored);
         this.mlData = null;
-        this.checkMLNotifications();
+        
+        // Initial check on page load
+        this.checkMLNotifications(); 
+        // Set up a recurring check every 2 minutes (120,000 milliseconds)
+        setInterval(() => this.checkMLNotifications(), 120000); 
     }
 
     async checkMLNotifications() {
@@ -772,8 +772,6 @@ class MLNotificationManager {
             alertBox.remove();
         });
 
-        setInterval(() => this.checkMLNotifications(), 120000);
-        this.checkMLNotifications();
     }
 
     updateTaskVisual(notification) {

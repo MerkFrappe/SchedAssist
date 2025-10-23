@@ -6,14 +6,13 @@ import sqlite3
 import os
 import threading
 import time
-import re
 
 
 app = Flask(__name__)
 DATABASE = "tasks.db"
 
 absolute_db_path = os.path.abspath(DATABASE)
-print(f"--- DEBUG: Flask is trying to use database at: {absolute_db_path} ---")
+
 
 ml_service_instance = MLService(db_path=DATABASE) 
 
@@ -188,8 +187,11 @@ def get_unified_notifications():
                         
                         time_diff = (now - reminder_time).total_seconds()
                         print(f"    Time difference: {time_diff} seconds")
-                        
-                        if 0 <= time_diff <= 120:  
+    
+                        should_trigger = (-300 <= time_diff <= 300)
+                        print(f"    Reminder condition (-300 <= {time_diff:.2f} <= 300) met: {should_trigger}")
+
+                        if should_trigger:
                             notifications.append({
                                 'type': 'reminder',
                                 'task_id': task_id,
@@ -284,6 +286,10 @@ def schedule():
             duration_td = timedelta(minutes=task.get('duration', 60))
             start_dt = deadline_dt - duration_td
 
+            # Add the full datetime objects for comparison in the template
+            task['start_dt'] = start_dt
+            task['deadline_dt'] = deadline_dt
+
             task['weekday'] = start_dt.strftime('%A')
             task['start_hour_int'] = start_dt.hour
             task['end_hour_int'] = deadline_dt.hour
@@ -322,7 +328,8 @@ def schedule():
         important_count=important_count,
         normal_count=normal_count,
         unessential_count=unessential_count,
-        advice_text=advice_text 
+        advice_text=advice_text,
+        now=now
         )
 
 @app.route("/Analytics")
@@ -435,9 +442,9 @@ def submit():
     try:
         
         score = ml_service_instance.predict_priority(task_data_for_ml)
-        print(f"🎯 DEBUG: ML predicted score for '{title}': {score:.2f}")
+        print(f" ML predicted score for '{title}': {score:.2f}")
     except ValueError as e:
-        print(f"⚠️ ERROR: ML model not trained, falling back to default score. {e}")
+        print(f"ERROR: ML model not trained, falling back to default score. {e}")
       
         now = datetime.now()
         remaining_time = (deadline - now).total_seconds() / 60
@@ -453,7 +460,6 @@ def submit():
         flexibility_weight_val = default_weights['flexibility_weight'] if is_flexible else 1.2
         score = (urgency_score * default_weights['urgency_weight']) + (importance * default_weights['importance_weight']) * flexibility_weight_val
 
-    print(f"🔧 DEBUG: Task '{title}' - is_flexible: {is_flexible}, task_type: '{task_type}'")
     
     db = get_db()
     db.execute("""
@@ -464,11 +470,15 @@ def submit():
 
     print(f"Task '{title}' saved with score {score:.2f}, flexible: {is_flexible}")
 
+    today_task_count = db.execute("""
+        SELECT COUNT(*) FROM tasks WHERE DATE(created_at) = DATE('now', 'localtime')
+    """).fetchone()[0]
 
-    task_count = db.execute("SELECT COUNT(*) FROM tasks").fetchone()[0]
-    if task_count >= 30:
-        print(f"Total tasks ({task_count}) >= 30. Triggering ML model training.")
-        train_ml() 
+    if today_task_count == 5:
+        print(f"✅ 5 tasks created today. Automatically triggering ML model training.")
+        # Run training in a background thread to avoid blocking the request
+        training_thread = threading.Thread(target=train_ml)
+        training_thread.start()
 
     return redirect(url_for('dashboard'))
 
@@ -487,7 +497,6 @@ def optimize_tasks():
         ORDER BY isCompleted ASC, score DESC
     """, (start_of_week.strftime("%Y-%m-%d %H:%M"), end_of_week.strftime("%Y-%m-%d %H:%M"))).fetchall() 
 
-    print("🔍 DEBUG - Tasks from database:")
     for task in tasks_raw:
         print(f"  - '{task['title']}': is_flexible={task['is_flexible']}, score={task['score']}")
 
@@ -582,12 +591,7 @@ def optimize_tasks():
         return True
 
     def find_empty_slot(schedule, task, preferred_day=None, preferred_slot=None):
-        """
-        Smarter function to find an empty slot.
-        1. Tries to place the task at the preferred day and time.
-        2. If that fails, searches the rest of the preferred day.
-        3. If that fails, searches all other days.
-        """
+
         num_slots = task['num_slots']
         all_days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
         
@@ -603,7 +607,7 @@ def optimize_tasks():
             if day == preferred_day and preferred_slot is not None:
                 if can_place_task(schedule, day, preferred_slot, num_slots):
                     return day, preferred_slot # Ideal spot found!
-                # If ideal spot is taken, search from that point forward
+             
                 start_search_index = preferred_slot + 1
 
             # Search the rest of the day (or the whole day if not preferred)
@@ -634,10 +638,10 @@ def optimize_tasks():
         
         print(f"📊 Task breakdown: {len(fixed_tasks)} fixed/high-priority, {len(flexible_tasks)} flexible/low-priority")
         
-        # --- (The 'fixed_tasks' processing part remains unchanged) ---
+     
         placed_tasks = []
         for task in fixed_tasks:
-            # ... (no changes needed here) ...
+           
             deadline_dt = datetime.strptime(task["deadline"], "%Y-%m-%d %H:%M")
             start_dt = deadline_dt - timedelta(minutes=task.get("duration", 60))
             
@@ -658,8 +662,7 @@ def optimize_tasks():
                 else:
                     print(f"❌ Could not place fixed task: '{task['title']}'")
 
-        # --- MODIFICATION IS HERE ---
-        # Process flexible tasks
+      
         for task in flexible_tasks:
             if task['id'] in placed_tasks:
                 continue
@@ -691,7 +694,6 @@ def optimize_tasks():
         return schedule
     
     def save_optimized_schedule(optimized_schedule):
-        """Save the optimized schedule to database"""
         conn = get_db()
         updated_count = 0
         processed_task_ids = set()
@@ -735,15 +737,15 @@ def optimize_tasks():
     
     print("🔄 Starting task optimization...")
     
-    # Apply rescheduling
+
     optimized_schedule = reschedule_flexible_tasks(tasks)
 
-    # Save to database
+   
     save_optimized_schedule(optimized_schedule)
 
     set_optimization_state(True)
     
-    # Convert schedule back to task list for display
+    
     tasks_for_calendar = []
     seen_task_ids = set()
     
@@ -753,7 +755,7 @@ def optimize_tasks():
                 tasks_for_calendar.append(task)
                 seen_task_ids.add(task['id'])
 
-    # If no tasks were placed, fall back to original tasks
+
     if not tasks_for_calendar:
         tasks_for_calendar = tasks
         print("⚠️ No tasks could be optimized, using original schedule")
@@ -802,16 +804,16 @@ def get_task_hierarchy_modal_content():
         ORDER BY score DESC, deadline ASC
     """).fetchall()
     tasks = [dict(row) for row in tasks]
-    return render_template("task_hierarchy_modal_content.html", tasks=tasks)
+    return render_template("task_heirarchy_modal_content.html", tasks=tasks)
 
-@app.route("/train_ml", methods=["POST", "GET"]) # Added GET for manual trigger/testing
+@app.route("/train_ml", methods=["POST", "GET"])
 def train_ml():
     print("🔄 Triggering ML model training and weight analysis...")
     try:
-        # We need to make sure there's enough data for training
+       
         db = get_db()
         task_count = db.execute("SELECT COUNT(*) FROM tasks").fetchone()[0]
-        if task_count < 5: # MLService needs at least 5 tasks for analysis
+        if task_count < 5: 
             print(f"⚠️ Not enough tasks ({task_count}) for ML analysis. Skipping training.")
             return jsonify({"status": "insufficient_data", "message": "Not enough tasks to train ML models (need at least 5)."}), 200
 
@@ -838,13 +840,11 @@ def debug_weights():
 
 @app.route("/api/notifications")
 def api_notifications():
-    """Endpoint for frontend to get all notifications"""
     notifications = get_unified_notifications()
     return jsonify(notifications)
 
 @app.route("/debug_tasks")
 def debug_tasks():
-    """Debug route to see all tasks in database"""
     conn = get_db()
     
     # Get all tasks
@@ -863,7 +863,6 @@ def debug_tasks():
 
 @app.route("/test_ml_prediction", methods=["POST"])
 def test_ml_prediction():
-    """Test ML prediction with a sample task"""
     try:
         # Create a sample task for testing
         sample_task = {
@@ -887,7 +886,7 @@ def test_ml_prediction():
     
 @app.route("/ml_analysis")
 def ml_analysis():
-    """Enhanced ML analysis for the analytics dashboard"""
+
     conn = get_db()
     
     # Get completion patterns by category
@@ -934,7 +933,7 @@ def ml_analysis():
 
 @app.route("/api/current_tasks")
 def api_current_tasks():
-    """Get current tasks for ML notifications"""
+  
     conn = get_db()
     
     # Get tasks for the current week
@@ -952,7 +951,7 @@ def api_current_tasks():
     
     tasks_list = []
     for task in tasks:
-        task_dict = dict(task)  # Convert to dict to use .get() method
+        task_dict = dict(task)  
         
         try:
             # Parse deadline and calculate start/end times
@@ -981,40 +980,62 @@ def generate_advice_from_weights():
     
     weights = get_ml_weights()
     if not weights:
-        
-        advice.append("Input your tasks first and we'll see what we can do.")
         return "Not enough data yet for personalized advice."
 
+    # Define baselines to find the most significant deviation
+    baselines = {
+        'category_Work': 1.0,
+        'category_Education': 1.0,
+        'urgency_weight': 0.35,
+        'duration_weight': 1.0,
+        'flexibility_weight': 1.0,
+        'importance_weight': 0.7
+    }
 
-    advice = []
+    # Calculate the deviation for each weight
+    deviations = {}
+    for key, baseline in baselines.items():
+        current_value = weights.get(key, baseline)
+        # Use absolute difference to find the largest change, regardless of direction
+        deviations[key] = abs(current_value - baseline)
 
-    urgency_threshold = 1.0
-    importance_threshold = 1.0
-    flexibility_threshold = 0.8
-    category_work_threshold = 1.5
-    category_education_threshold = 1.5
-    duration_threshold_pref_short = 1.2
-    duration_threshold_pref_long = 0.8
+    # Find the weight with the maximum deviation
+    if not deviations:
+        return "Your task patterns look well-balanced. Stay consistent!"
 
-    
-    
-    if weights.get('flexibility_weight', 1.0) < flexibility_threshold:
-        advice.append("You tend to delay flexible tasks — try scheduling them earlier.")
-    if weights.get('urgency_weight', 1.0) > urgency_threshold:
-        advice.append("You love to cram. Try to plan these more effectively.")
-    if weights.get('category_Work', 1.0) > category_work_threshold:
-        advice.append("Working Hard or Hardly Working? Try to get a break now and then.")
-    if weights.get('category_Education', 1.0) > category_education_threshold:
-        advice.append("You seem to be a Eager Student. Dont forget your other duties as well!")
-    if weights.get('duration_weight', 1.0) > duration_threshold_pref_short:
-        advice.append("You seem to prefer shorter tasks. Consider breaking down larger tasks.")
-    elif weights.get('duration_weight', 1.0) < duration_threshold_pref_long:
-        advice.append("Seems you have a lot on your plate right now. Try to chisel out some rest time.")
-      
-    if not advice:
-        advice.append("Your task patterns look well-balanced. Stay consistent!")
+    primary_trait = max(deviations, key=deviations.get)
+    trait_value = weights.get(primary_trait, baselines[primary_trait])
 
-    return " ".join(advice)
+    # --- Generate advice based on the SINGLE most prominent trait ---
+
+    if primary_trait == 'category_Work':
+        if trait_value > 2.0:
+            return "Your focus on work is intense. Remember to make time for personal and educational goals to maintain balance."
+        elif trait_value > 1.5:
+            return "You're prioritizing work, which is great! Just be sure you're not neglecting other important areas of your life."
+
+    if primary_trait == 'category_Education':
+        if trait_value > 2.0:
+            return "You're heavily invested in your studies. It's a good time to check if your other responsibilities are getting enough attention."
+        elif trait_value > 1.5:
+            return "You seem to be a very eager student! Don't forget to balance your academic pursuits with other duties."
+
+    if primary_trait == 'urgency_weight':
+        if trait_value > 1.0:
+            return "You tend to focus on tasks with imminent deadlines. Try planning ahead to reduce last-minute pressure."
+
+    if primary_trait == 'duration_weight':
+        if trait_value > 1.2:
+            return "You seem to prefer shorter tasks. For larger projects, consider breaking them down into smaller, more manageable steps."
+        elif trait_value < 0.8:
+            return "You're tackling a lot of long-duration tasks. Make sure to schedule breaks to stay fresh and avoid burnout."
+
+    if primary_trait == 'flexibility_weight':
+        if trait_value < 0.8:
+            return "You often delay flexible tasks. Try scheduling them with the same priority as your fixed tasks to ensure they get done."
+
+    # Default message if no specific advice is triggered
+    return "Your task patterns look well-balanced. Stay consistent!"
 
 
 def generate_analytics_summary():
@@ -1058,7 +1079,7 @@ def generate_analytics_summary():
     elif education > work + 0.3:
         trends.append("📚 Study mode: Academic tasks are priority")
     
-    # Duration decisions (NEW - simple)
+
     if duration > 1.2:
         trends.append("⏱️ Quick tasks: Preferring shorter, faster tasks")
     elif duration < 0.8:
@@ -1078,7 +1099,7 @@ def api_advice():
 
 def background_ml_training():
     """Background thread for ML training - runs monthly and scans last 30 days tasks"""
-    # Use 30 days in seconds for approximately a month
+  
     MONTHLY_INTERVAL_SECONDS = 30 * 24 * 60 * 60
     while True:
         time.sleep(MONTHLY_INTERVAL_SECONDS)  
@@ -1107,7 +1128,7 @@ def update_task(task_id):
     try:
   
         title = request.form.get('title')
-        deadline_str_from_form = request.form.get('deadline') # This is in 'YYYY-MM-DDTHH:MM' format
+        deadline_str_from_form = request.form.get('deadline') 
         duration_hours = int(request.form.get("duration_hours", 0))
         duration_minutes = int(request.form.get("duration_minutes", 0))
         task_type = request.form.get('task_type', 'uninterrupted')
@@ -1158,11 +1179,9 @@ def update_task(task_id):
 
     except Exception as e:
         print(f"❌ ERROR updating task {task_id}: {e}")
-        # Be more specific in the error response for easier debugging
         return jsonify({'error': f"An error occurred: {str(e)}"}), 400
 
-# App Entry Point
-# -------------------------
+
 if __name__ == "__main__":
     init_db()
     os.makedirs('models', exist_ok=True) 
