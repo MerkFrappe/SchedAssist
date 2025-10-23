@@ -175,7 +175,7 @@
     background-color: rgba(74, 125, 125, 0.3) !important;
 }
 
-.task-block.completed-task.Work {
+.task-block.completed-task.Work { 
     background-color: rgba(220, 53, 69, 0.3) !important;
 }
 
@@ -230,7 +230,6 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            /* Ensure day labels have a fixed width or can shrink */
             width: 100%;
            
         }
@@ -292,7 +291,6 @@
 
         .task-block.Personal {
             background-color: #ffc107;
-            color: #333;
         }
 
         .task-block.Health {
@@ -305,7 +303,7 @@
 
         .task-block.score-high {
             background-color: #ffc107;
-            color: #333;
+
         }
 
         .task-block.score-medium {
@@ -320,7 +318,6 @@
             opacity: 0.6;
             cursor: not-allowed;
         }
-
         #notificationContainer {
             position: fixed;
             top: 20px;
@@ -440,9 +437,21 @@
             background: #a8a8a8;
         }
 
+	.task-block.happening-now {
+    		outline: 3px solid #ff0000;
+    		box-shadow: 0 0 10px rgba(108, 99, 255, 0.6);
+   		    animation: subtle-pulse 1.5s infinite alternate; 
+    		transform: scale(1.01);
+	}
+
+	@keyframes subtle-pulse {
+    		0% { transform: scale(1); }
+    		100% { transform: scale(1.015); }
+	}
+
         .custom-alert {
    
-    background: linear-gradient(135deg, #30c5d2, #471069);
+    	background: linear-gradient(135deg, #30c5d2, #471069);
         font-weight: bold;
         color: white;
         }
@@ -536,7 +545,7 @@
             {% if advice_text and advice_text.strip() %}
             <div id="personalizedAdviceAlert" class="alert custom-alert alert-dismissible fade show mb-4" role="alert">
                 <h4 class="alert-heading" style="font-weight: bold;">Personalized Advice</h4>
-                {{ advice_text }}
+                {{ advice_text | safe }}
             </div>
             {% endif %}
 
@@ -614,9 +623,7 @@
                                 </div>
                                 {% endfor %}
                                 {% endfor %}
-                                <!-- Tasks -->
-                                <!-- Corrected Jinja2 task block -->
-                               <!-- In the task block section -->
+                             
 {% for task in tasks %}
 {% if task.weekday and task.start_hour_int is defined and task.end_hour_int is defined %}
 {% set start_minutes_from_6am = (task.start_hour_int - 6) * 60 + task.start_minute_int %}
@@ -693,10 +700,17 @@ class MLNotificationManager {
 
             const basicNotifications = await notificationsResponse.json();
 
+            // Always apply visual styles for all active notifications
             basicNotifications.forEach(notification => {
+                this.updateTaskVisual(notification); // Apply visual style every time
+
+                // But only show the pop-up alert for new notifications
                 const notificationId = `basic_${notification.task_id}_${notification.type}`;
                 if (!this.shownNotifications.has(notificationId)) {
-                    this.showBasicNotification(notification);
+                    this.showAlert(
+                        `${this.getNotificationConfig(notification).icon} ${notification.message}`,
+                        this.getNotificationConfig(notification).type
+                    );
                     this.shownNotifications.add(notificationId);
                 }
             });
@@ -708,20 +722,13 @@ class MLNotificationManager {
         }
     }
 
-    showBasicNotification(notification) {
-        const config = {
+    getNotificationConfig(notification) {
+        const configs = {
             'reminder': { icon: '⏰', type: 'warning' },
             'urgency': { icon: '🚨', type: 'error' },
             'overdue': { icon: '🔴', type: 'error' }
         };
-        const cfg = config[notification.type] || config.reminder;
-
-        this.showAlert(
-            `${cfg.icon} ${notification.message}`,
-            cfg.type,
-            `basic_${notification.task_id}_${notification.type}` // Pass the unique ID
-        );
-        this.updateTaskVisual(notification);
+        return configs[notification.type] || configs.reminder;
     }
 
     showAlert(msg, type = 'info', notificationId = null) {
@@ -743,7 +750,6 @@ class MLNotificationManager {
         alertBox.style.cssText = `
             background: ${style.background};
             color: ${style.color || 'white'};
-            /* ... other styles remain the same ... */
             padding: 15px 20px;
             border-radius: 10px;
             font-weight: 600;
@@ -779,7 +785,7 @@ class MLNotificationManager {
         const taskElement = document.querySelector(`[data-task-id="${notification.task_id}"]`);
         if (taskElement) {
             taskElement.classList.remove('urgent-task', 'overdue-task');
-            if (notification.type === 'urgency' || notification.type === 'error') {
+            if (notification.type === 'reminder') {
                 taskElement.classList.add('urgent-task');
             } else if (notification.type === 'overdue') {
                 taskElement.classList.add('overdue-task');
@@ -790,9 +796,7 @@ class MLNotificationManager {
     }
 
     clearTaskNotifications(taskId) {
-        // *** CHANGE 2: ENHANCED LOGIC TO REMOVE NOTIFICATIONS ***
-        
-        // 1. Remove from data source (localStorage)
+    
         const notificationsToRemove = [];
         for (const notificationId of this.shownNotifications) {
             if (notificationId && notificationId.includes(`_${taskId}_`)) {
@@ -855,6 +859,46 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Initialize notification manager
     const notificationManager = new MLNotificationManager();
+
+    /**
+     * START: Code to highlight tasks that are currently happening
+     */
+    function updateHappeningNowStatus() {
+        const allTasks = document.querySelectorAll('.task-block');
+        const now = new Date();
+        // JS getDay() is 0=Sun, 1=Mon... CSS grid is 1=Mon, 2=Tue... 7=Sun
+        const currentDayColumn = now.getDay() === 0 ? 7 : now.getDay(); 
+        const currentTimeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+        allTasks.forEach(task => {
+            // Don't apply to completed tasks
+            if (task.dataset.completed === "true") {
+                 task.classList.remove('happening-now');
+                 return;
+            }
+
+            const taskDayColumn = parseInt(task.style.gridColumn.split('/')[0].trim(), 10);
+            const startTime = task.dataset.startTime;
+            const endTime = task.dataset.endTime;
+
+            if (taskDayColumn === currentDayColumn && startTime && endTime) {
+                if (currentTimeStr >= startTime && currentTimeStr < endTime) {
+                    task.classList.add('happening-now');
+                } else {
+                    task.classList.remove('happening-now');
+                }
+            } else {
+                task.classList.remove('happening-now');
+            }
+        });
+    }
+
+    // Run the check immediately on load and then every minute
+    updateHappeningNowStatus();
+    setInterval(updateHappeningNowStatus, 60000); // 60000ms = 1 minute
+    /**
+     * END: Code to highlight tasks that are currently happening
+     */
 
     function updateActionButtons() {
         markCompletedBtn.disabled = !selectedTaskId;
@@ -929,6 +973,7 @@ markCompletedBtn.addEventListener('click', async () => {
             const taskBlock = document.querySelector(`.task-block[data-task-id="${selectedTaskId}"]`);
             if (taskBlock) {
                 taskBlock.classList.add('completed-task');
+                taskBlock.classList.remove('happening-now'); // Ensure it stops pulsing
                 taskBlock.dataset.completed = "true";
                 taskBlock.innerHTML = `${taskBlock.dataset.title} <span class="completed-check">✓</span>`;
             }

@@ -209,14 +209,21 @@
                         <div class="category-insight">
                             <h6>📊 This Week's Focus</h6>
                             <p class="mb-0" id="categoryInsightText">
-                                {% if categoryLabels and categoryCounts %}
-                                {% set max_count = categoryCounts | max %}
-                                {% set max_index = categoryCounts.index(max_count) %}
-                                {% set dominant_category = categoryLabels[max_index] %}
-                                {{ dominant_category }} takes a lot this week.
+                                {% if analytics_summary and analytics_summary.weights %}
+                                {% set max_weight = -1 %}
+                                {% for key, value in analytics_summary.weights.items() %}
+                                    {% if key.startswith('category_') %}
+                                        {% if value > max_weight %}
+                                            {% set max_weight = value %}
+                                            {% set dominant_category = key.split('_')[1] %}
+                                        {% endif %}
+                                    {% endif %}
+                                {% endfor %}
+                                Your behavior shows a strong focus on <strong>{{ dominant_category }}</strong> tasks.
                                 {% else %}
                                 Complete tasks to see your focus areas!
                                 {% endif %}
+
                             </p>
                         </div>
                     </div>
@@ -315,7 +322,7 @@
         const dayLabels = {{ day_labels | tojson | safe }};
         const dayCounts = {{ day_counts | tojson | safe }};
         const categoryLabels = {{ category_labels | tojson | safe }};
-        const categoryCounts = {{ counts | tojson | safe }};
+        const categoryCounts = {{ counts | tojson | safe }}; // Correctly aliased from Python's 'counts'
         const analyticsSummary = {{ analytics_summary | tojson | safe }};
 
         console.log('Analytics Data:', {

@@ -979,60 +979,43 @@ def api_current_tasks():
 def generate_advice_from_weights():
     
     weights = get_ml_weights()
+    advice_messages = []
+
     if not weights:
         return "Not enough data yet for personalized advice."
 
-    # Define baselines to find the most significant deviation
-    baselines = {
-        'category_Work': 1.0,
-        'category_Education': 1.0,
-        'urgency_weight': 0.35,
-        'duration_weight': 1.0,
-        'flexibility_weight': 1.0,
-        'importance_weight': 0.7
-    }
+    # Check for strong focus on Work
+    work_weight = weights.get('category_Work', 1.0)
+    if work_weight > 2.0:
+        advice_messages.append("- Your focus on work is intense. Remember to make time for personal and educational goals to maintain balance.")
+    elif work_weight > 1.5:
+        advice_messages.append("- You're prioritizing work, which is great! Just be sure you're not neglecting other important areas of your life.")
 
-    # Calculate the deviation for each weight
-    deviations = {}
-    for key, baseline in baselines.items():
-        current_value = weights.get(key, baseline)
-        # Use absolute difference to find the largest change, regardless of direction
-        deviations[key] = abs(current_value - baseline)
+    # Check for strong focus on Education
+    education_weight = weights.get('category_Education', 1.0)
+    if education_weight > 2.0:
+        advice_messages.append("- You're heavily invested in your studies. It's a good time to check if your other responsibilities are getting enough attention.")
+    elif education_weight > 1.5:
+        advice_messages.append("- You seem to be a very eager student! Don't forget to balance your academic pursuits with other duties.")
 
-    # Find the weight with the maximum deviation
-    if not deviations:
-        return "Your task patterns look well-balanced. Stay consistent!"
+    # Check for urgency-driven behavior
+    if weights.get('urgency_weight', 0.35) > 1.0:
+        advice_messages.append("You tend to focus on tasks with imminent deadlines. Try planning ahead to reduce last-minute pressure.")
 
-    primary_trait = max(deviations, key=deviations.get)
-    trait_value = weights.get(primary_trait, baselines[primary_trait])
+    # Check for duration preference
+    duration_weight = weights.get('duration_weight', 1.0)
+    if duration_weight > 1.2:
+        advice_messages.append("- You seem to prefer shorter tasks. For larger projects, consider breaking them down into smaller, more manageable steps.")
+    elif duration_weight < 0.8:
+        advice_messages.append("- You're tackling a lot of long-duration tasks. Make sure to schedule breaks to stay fresh and avoid burnout.")
 
-    # --- Generate advice based on the SINGLE most prominent trait ---
+    # Check for handling of flexible tasks
+    if weights.get('flexibility_weight', 1.0) < 0.8:
+        advice_messages.append("- You often delay flexible tasks. Try scheduling them with the same priority as your fixed tasks to ensure they get done.")
 
-    if primary_trait == 'category_Work':
-        if trait_value > 2.0:
-            return "Your focus on work is intense. Remember to make time for personal and educational goals to maintain balance."
-        elif trait_value > 1.5:
-            return "You're prioritizing work, which is great! Just be sure you're not neglecting other important areas of your life."
-
-    if primary_trait == 'category_Education':
-        if trait_value > 2.0:
-            return "You're heavily invested in your studies. It's a good time to check if your other responsibilities are getting enough attention."
-        elif trait_value > 1.5:
-            return "You seem to be a very eager student! Don't forget to balance your academic pursuits with other duties."
-
-    if primary_trait == 'urgency_weight':
-        if trait_value > 1.0:
-            return "You tend to focus on tasks with imminent deadlines. Try planning ahead to reduce last-minute pressure."
-
-    if primary_trait == 'duration_weight':
-        if trait_value > 1.2:
-            return "You seem to prefer shorter tasks. For larger projects, consider breaking them down into smaller, more manageable steps."
-        elif trait_value < 0.8:
-            return "You're tackling a lot of long-duration tasks. Make sure to schedule breaks to stay fresh and avoid burnout."
-
-    if primary_trait == 'flexibility_weight':
-        if trait_value < 0.8:
-            return "You often delay flexible tasks. Try scheduling them with the same priority as your fixed tasks to ensure they get done."
+    # Combine the messages or return a default one
+    if advice_messages:
+        return "<br>".join(advice_messages)
 
     # Default message if no specific advice is triggered
     return "Your task patterns look well-balanced. Stay consistent!"
